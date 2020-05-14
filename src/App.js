@@ -1,25 +1,47 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { Suspense } from "react";
+import { BrowserRouter, Switch, Route } from "react-router-dom";
+import { Web3ReactProvider, createWeb3ReactRoot } from "@web3-react/core";
+import { ethers } from "ethers";
+
+import Home from "./pages/Home";
+import Web3Manager from "./components/Web3Manager";
+import ThemeProvider, { GlobalStyle } from "./themes";
+import { READ_ONLY } from "./constants";
+
+const Web3ReadOnlyProvider = createWeb3ReactRoot(READ_ONLY);
+
+function getLibrary(provider) {
+  const library = new ethers.providers.Web3Provider(provider);
+  library.pollingInterval = 10000;
+  return library;
+}
+
+function Router() {
+  return (
+    <Suspense fallback={null}>
+      <BrowserRouter>
+        <Switch>
+          <Route exact path="/">
+            <Home />
+          </Route>
+        </Switch>
+      </BrowserRouter>
+    </Suspense>
+  );
+}
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Web3ReactProvider getLibrary={getLibrary}>
+      <Web3ReadOnlyProvider getLibrary={getLibrary}>
+        <Web3Manager>
+          <ThemeProvider>
+            <GlobalStyle />
+            <Router />
+          </ThemeProvider>
+        </Web3Manager>
+      </Web3ReadOnlyProvider>
+    </Web3ReactProvider>
   );
 }
 
