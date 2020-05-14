@@ -1,10 +1,10 @@
-import React from "react";
+import React from 'react'
 import {
   ThemeProvider as StyledComponentsThemeProvider,
   css,
-} from "styled-components";
+} from 'styled-components'
 
-export { GlobalStyle } from "./GlobalStyle";
+export { GlobalStyle } from './GlobalStyle'
 
 const breakpoints = {
   xs: 0,
@@ -12,19 +12,19 @@ const breakpoints = {
   md: 960,
   lg: 1280,
   xl: 1920,
-};
+}
 
 const mediaQuery = Object.keys(breakpoints).reduce((accumulator, label) => {
   accumulator[label] = (...args) => css`
     @media (min-width: ${breakpoints[label]}px) {
       ${css(...args)}
     }
-  `;
-  return accumulator;
-}, {});
+  `
+  return accumulator
+}, {})
 
-const black = "#000000";
-const white = "#FFFFFF";
+const black = '#000000'
+const white = '#FFFFFF'
 
 const theme = {
   mediaQuery,
@@ -33,12 +33,12 @@ const theme = {
     black,
     white,
   },
-};
+}
 
 export default function ThemeProvider({ children }) {
   return (
     <StyledComponentsThemeProvider theme={theme}>
       {children}
     </StyledComponentsThemeProvider>
-  );
+  )
 }

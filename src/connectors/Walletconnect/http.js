@@ -1,26 +1,26 @@
-import EventEmitter from "events";
-import { XMLHttpRequest } from "xhr2-cookies";
+import EventEmitter from 'events'
+import { XMLHttpRequest } from 'xhr2-cookies'
 
 // -- global -------------------------------------------------------------- //
-const wwindow = window;
+const wwindow = window
 
 const XHR =
-  typeof wwindow !== "undefined" &&
-  typeof wwindow.XMLHttpRequest !== "undefined"
+  typeof wwindow !== 'undefined' &&
+  typeof wwindow.XMLHttpRequest !== 'undefined'
     ? wwindow.XMLHttpRequest
-    : XMLHttpRequest;
+    : XMLHttpRequest
 
 // -- HTTPConnection ------------------------------------------------------ //
 
 class HTTPConnection extends EventEmitter {
   constructor(url) {
-    super();
-    this.url = url;
+    super()
+    this.url = url
     this.post = {
       body: null,
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
-    };
+      headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+    }
   }
 
   formatError(payload, message, code = -1) {
@@ -28,61 +28,61 @@ class HTTPConnection extends EventEmitter {
       error: { message, code },
       id: payload.id,
       jsonrpc: payload.jsonrpc,
-    };
+    }
   }
 
   send(payload, internal) {
     return new Promise((resolve) => {
-      if (payload.method === "eth_subscribe") {
+      if (payload.method === 'eth_subscribe') {
         const error = this.formatError(
           payload,
-          "Subscriptions are not supported by this HTTP endpoint"
-        );
-        return resolve(error);
+          'Subscriptions are not supported by this HTTP endpoint',
+        )
+        return resolve(error)
       }
-      const xhr = new XHR();
+      const xhr = new XHR()
 
-      let responded = false;
+      let responded = false
 
       const res = (err, result) => {
         if (!responded) {
-          xhr.abort();
-          responded = true;
+          xhr.abort()
+          responded = true
           if (internal) {
-            internal(err, result);
+            internal(err, result)
           } else {
-            const { id, jsonrpc } = payload;
+            const { id, jsonrpc } = payload
             const response = err
               ? { id, jsonrpc, error: { message: err.message, code: err.code } }
-              : { id, jsonrpc, result };
-            resolve(response);
+              : { id, jsonrpc, result }
+            resolve(response)
           }
         }
-      };
-
-      try {
-        this.post.body = JSON.stringify(payload);
-      } catch (e) {
-        return res(e);
       }
 
-      xhr.open("POST", this.url, true);
-      xhr.timeout = 60 * 1000;
-      xhr.onerror = res;
-      xhr.ontimeout = res;
+      try {
+        this.post.body = JSON.stringify(payload)
+      } catch (e) {
+        return res(e)
+      }
+
+      xhr.open('POST', this.url, true)
+      xhr.timeout = 60 * 1000
+      xhr.onerror = res
+      xhr.ontimeout = res
       xhr.onreadystatechange = () => {
         if (xhr.readyState === 4) {
           try {
-            const response = JSON.parse(xhr.responseText);
-            res(response.error, response.result);
+            const response = JSON.parse(xhr.responseText)
+            res(response.error, response.result)
           } catch (e) {
-            res(e);
+            res(e)
           }
         }
-      };
-      xhr.send(JSON.stringify(payload));
-    });
+      }
+      xhr.send(JSON.stringify(payload))
+    })
   }
 }
 
-export default HTTPConnection;
+export default HTTPConnection

@@ -1,14 +1,14 @@
-import * as ethers from "ethers";
+import * as ethers from 'ethers'
 
 export default class UncheckedJsonRpcSigner extends ethers.Signer {
   constructor(signer) {
-    super();
-    ethers.utils.defineReadOnly(this, "signer", signer);
-    ethers.utils.defineReadOnly(this, "provider", signer.provider);
+    super()
+    ethers.utils.defineReadOnly(this, 'signer', signer)
+    ethers.utils.defineReadOnly(this, 'provider', signer.provider)
   }
 
   getAddress() {
-    return this.signer.getAddress();
+    return this.signer.getAddress()
   }
 
   sendTransaction(transaction) {
@@ -24,13 +24,13 @@ export default class UncheckedJsonRpcSigner extends ethers.Signer {
         confirmations: 0,
         from: null,
         wait: (confirmations) => {
-          return this.signer.provider.waitForTransaction(hash, confirmations);
+          return this.signer.provider.waitForTransaction(hash, confirmations)
         },
-      };
-    });
+      }
+    })
   }
 
   signMessage(message) {
-    return this.signer.signMessage(message);
+    return this.signer.signMessage(message)
   }
 }

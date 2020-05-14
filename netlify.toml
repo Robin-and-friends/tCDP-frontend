@@ -1,0 +1,11 @@
+# build
+[build]
+  base = "."
+  publish = "build/"
+  command = "npm run build"
+
+# support SPA setup
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

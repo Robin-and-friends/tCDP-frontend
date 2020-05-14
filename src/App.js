@@ -1,19 +1,19 @@
-import React, { Suspense } from "react";
-import { BrowserRouter, Switch, Route } from "react-router-dom";
-import { Web3ReactProvider, createWeb3ReactRoot } from "@web3-react/core";
-import { ethers } from "ethers";
+import React, { Suspense } from 'react'
+import { BrowserRouter, Switch, Route } from 'react-router-dom'
+import { Web3ReactProvider, createWeb3ReactRoot } from '@web3-react/core'
+import { ethers } from 'ethers'
 
-import Home from "./pages/Home";
-import Web3Manager from "./components/Web3Manager";
-import ThemeProvider, { GlobalStyle } from "./themes";
-import { READ_ONLY } from "./constants";
+import Home from './pages/Home'
+import Web3Manager from './components/Web3Manager'
+import ThemeProvider, { GlobalStyle } from './themes'
+import { READ_ONLY } from './constants'
 
-const Web3ReadOnlyProvider = createWeb3ReactRoot(READ_ONLY);
+const Web3ReadOnlyProvider = createWeb3ReactRoot(READ_ONLY)
 
 function getLibrary(provider) {
-  const library = new ethers.providers.Web3Provider(provider);
-  library.pollingInterval = 10000;
-  return library;
+  const library = new ethers.providers.Web3Provider(provider)
+  library.pollingInterval = 10000
+  return library
 }
 
 function Router() {
@@ -21,13 +21,13 @@ function Router() {
     <Suspense fallback={null}>
       <BrowserRouter>
         <Switch>
-          <Route exact path="/">
+          <Route exact path='/'>
             <Home />
           </Route>
         </Switch>
       </BrowserRouter>
     </Suspense>
-  );
+  )
 }
 
 function App() {
@@ -42,7 +42,7 @@ function App() {
         </Web3Manager>
       </Web3ReadOnlyProvider>
     </Web3ReactProvider>
-  );
+  )
 }
 
-export default App;
+export default App
