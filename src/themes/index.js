@@ -28,10 +28,12 @@ const white = '#FFFFFF'
 
 const theme = {
   mediaQuery,
-  fontFamilies: {},
   colors: {
     black,
     white,
+    backgroundColor: '#F5F7FA',
+    textColor: '#4D4D4D',
+    primary: '#43BFBF',
   },
 }
 

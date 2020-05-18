@@ -23,6 +23,21 @@ export const GlobalStyle = createGlobalStyle`
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
   }
 
+  #root {
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: -10;
+      width: 100%;
+      height: 230px;
+      background-color: ${({ theme }) => theme.colors.primary};
+    }
+  }
+
   input[type="number"]::-webkit-outer-spin-button,
   input[type="number"]::-webkit-inner-spin-button {
     -webkit-appearance: none;
