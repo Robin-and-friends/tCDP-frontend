@@ -14,7 +14,7 @@ export const GlobalStyle = createGlobalStyle`
 
   html {
     font-size: 16px;
-    font-family: 'Lora', serif;
+    font-family: 'Nunito', serif;
     font-variant: none;
     color: ${({ theme }) => theme.colors.textColor};
     background-color: ${({ theme }) => theme.colors.backgroundColor};
