@@ -30,6 +30,7 @@ const Block = styled.section`
   padding: 32px 40px;
   border-radius: 8px;
   background-color: ${({ theme }) => theme.colors.white};
+  box-shadow: 0 12px 30px -12px rgba(183, 197, 204, 0.6);
 
   &:not(:first-child) {
     margin-top: 32px;
