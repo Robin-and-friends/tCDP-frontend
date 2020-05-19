@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24px" height="24px" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 63.1 (92452) - https://sketch.com -->
+    <title>icon-arrow-right</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <rect id="path-1" x="0" y="0" width="24" height="24"></rect>
+    </defs>
+    <g id="icon-arrow-right" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g>
+            <mask id="mask-2" fill="white">
+                <use xlink:href="#path-1"></use>
+            </mask>
+            <g id="Mask"></g>
+            <path d="M8.93933983,4.93933983 C9.48851461,4.39016504 10.357577,4.35584162 10.9467378,4.83636956 L11.0606602,4.93933983 L17.0606602,10.9393398 C17.609835,11.4885146 17.6441584,12.357577 17.1636304,12.9467378 L17.0606602,13.0606602 L11.0606602,19.0606602 C10.4748737,19.6464466 9.52512627,19.6464466 8.93933983,19.0606602 C8.39016504,18.5114854 8.35584162,17.642423 8.83636956,17.0532622 L8.93933983,16.9393398 L13.879,12 L8.93933983,7.06066017 C8.39016504,6.51148539 8.35584162,5.64242298 8.83636956,5.05326224 L8.93933983,4.93933983 Z" id="Path" fill="#43BFBF" fill-rule="nonzero" mask="url(#mask-2)"></path>
+        </g>
+    </g>
+</svg>
