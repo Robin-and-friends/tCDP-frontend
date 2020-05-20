@@ -1,6 +1,19 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import styled from 'styled-components'
+import BigNumber from 'bignumber.js'
 import AmountInput from './AmountInput'
+import { useContract } from '../hooks/ethereum'
+import {
+  MAX_UINT256,
+  ERC20_STATUS,
+  amountFormatter,
+  bigToHex,
+  etherToWei,
+  isValidFloat,
+  safeToString,
+} from '../utils'
+import abiTCDP from '../constants/abis/tCDP.json'
+import abiERC20 from '../constants/abis/erc20.json'
 
 const PanelWrapper = styled.section`
   border-radius: 8px;
@@ -66,13 +79,23 @@ const ResultText = styled.div`
   font-weight: 700;
 `
 
+const WaringText = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: -40px;
+  height: 40px;
+  color: ${({ theme }) => theme.colors.waringColor};
+`
+
 const Button = styled.button`
   width: 100%;
   height: 48px;
   margin-top: 40px;
   border: 0;
   border-radius: 8px;
-  background-color: ${({ theme }) => theme.colors.primary};
+  background-color: ${({ active, theme }) =>
+    active ? theme.colors.primary : '#B3B3B3'};
   color: ${({ theme }) => theme.colors.white};
   font-size: 18px;
   font-weight: 700;
@@ -80,17 +103,103 @@ const Button = styled.button`
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 6px 20px -6px #73e6e6;
-  cursor: pointer;
+  box-shadow: ${({ active }) => (active ? '0 6px 20px -6px #73e6e6' : '')};
+  cursor: ${({ active }) => (active ? 'pointer' : 'not-allowed')};
 `
 
 const DEPOSIT = 'deposit'
 const WITHDRAW = 'withdraw'
 
-export default function FunctionPanel() {
+export default function FunctionPanel({
+  tCDPAddress,
+  daiAddress,
+  collateral = new BigNumber(0),
+  debt = new BigNumber(0),
+  balance = new BigNumber(0),
+  tCDPBalance = new BigNumber(0),
+  tCDPTotalSupply = new BigNumber(0),
+  daiBalance = new BigNumber(0),
+  daiAllowance = new BigNumber(0),
+}) {
   const [tab, setTab] = useState(DEPOSIT)
-  const [ethAmount, setEthAmount] = useState('')
-  const [tcdpAmount, setTcdpAmount] = useState('')
+  const [ethAmount, setEthAmount] = useState('0')
+  const [tCDPAmount, setTCDPAmount] = useState('0')
+
+  const depositState = {
+    receiveDai: new BigNumber(ethAmount).times(tCDPTotalSupply).div(collateral),
+    receiveTCDP: new BigNumber(ethAmount).times(debt).div(collateral),
+  }
+
+  const withdrawState = {
+    payDai: new BigNumber(tCDPAmount).times(debt).div(tCDPTotalSupply),
+    receiveEth: new BigNumber(tCDPAmount)
+      .times(collateral)
+      .div(tCDPTotalSupply),
+  }
+  withdrawState.warning = daiBalance.lt(etherToWei(withdrawState.payDai))
+    ? ERC20_STATUS.INSUFFICIENT_BALANCE
+    : daiAllowance.lt(etherToWei(withdrawState.payDai))
+    ? ERC20_STATUS.INSUFFICIENT_ALLOWANCE
+    : ERC20_STATUS.OK
+
+  const tCDP = useContract(tCDPAddress, abiTCDP)
+  const dai = useContract(daiAddress, abiERC20)
+
+  const mint = () => {
+    tCDP.mint({ value: bigToHex(etherToWei(ethAmount)) })
+  }
+
+  const burn = () => {
+    tCDP.burn(bigToHex(etherToWei(tCDPAmount)))
+  }
+
+  const approveDai = () => {
+    dai.approve(tCDPAddress, bigToHex(MAX_UINT256))
+  }
+
+  const setMaxEthAmount = useCallback(() => {
+    setEthAmount(amountFormatter(balance, 18, 18, true))
+  }, [balance])
+
+  const setNewEthAmount = useCallback(
+    (value) => {
+      if (value === '') {
+        setEthAmount('0')
+      }
+      if (!isValidFloat(value)) {
+        return
+      }
+      const newAmount = etherToWei(new BigNumber(value))
+      if (newAmount.gt(balance)) {
+        setMaxEthAmount()
+      } else {
+        setEthAmount(value)
+      }
+    },
+    [balance, setMaxEthAmount],
+  )
+
+  const setMaxTCDPAmount = useCallback(() => {
+    setTCDPAmount(amountFormatter(tCDPBalance, 18, 18, true))
+  }, [tCDPBalance])
+
+  const setNewTCDPAmount = useCallback(
+    (value) => {
+      if (value === '') {
+        setTCDPAmount('0')
+      }
+      if (!isValidFloat(value)) {
+        return
+      }
+      const newAmount = etherToWei(new BigNumber(value))
+      if (newAmount.gt(tCDPBalance)) {
+        setMaxTCDPAmount()
+      } else {
+        setTCDPAmount(value)
+      }
+    },
+    [tCDPBalance, setMaxTCDPAmount],
+  )
 
   return (
     <PanelWrapper>
@@ -107,14 +216,20 @@ export default function FunctionPanel() {
             <Label>Deposit ETH</Label>
             <AmountInput
               value={ethAmount}
-              onChange={(event) => setEthAmount(event.target.value)}
+              onChange={(event) => setNewEthAmount(event.target.value)}
+              onMax={setMaxEthAmount}
             />
           </Fieldset>
           <Fieldset>
             <Label>You will receive</Label>
-            <ResultText>1 tCDP + 100 DAI</ResultText>
+            <ResultText>
+              {safeToString(depositState.receiveDai)} tCDP +{' '}
+              {safeToString(depositState.receiveTCDP)} DAI
+            </ResultText>
           </Fieldset>
-          <Button>deposit</Button>
+          <Button onClick={mint} active={new BigNumber(ethAmount).gt(0)}>
+            deposit
+          </Button>
         </TabPanelContent>
       </TabPanel>
       <TabPanel value={tab} index={WITHDRAW}>
@@ -122,19 +237,42 @@ export default function FunctionPanel() {
           <Fieldset>
             <Label>Withdraw tCDP</Label>
             <AmountInput
-              value={tcdpAmount}
-              onChange={(event) => setTcdpAmount(event.target.value)}
+              value={tCDPAmount}
+              onChange={(event) => setNewTCDPAmount(event.target.value)}
+              onMax={setMaxTCDPAmount}
             />
           </Fieldset>
           <Fieldset>
-            <Label>You need repay</Label>
-            <ResultText>100 DAI</ResultText>
+            <Label>You need repay </Label>
+            <ResultText>{safeToString(withdrawState.payDai)} DAI</ResultText>
           </Fieldset>
           <Fieldset>
             <Label>You will receive</Label>
-            <ResultText>1 ETH</ResultText>
+            <ResultText>
+              {safeToString(withdrawState.receiveEth)} ETH
+            </ResultText>
           </Fieldset>
-          <Button>withdraw</Button>
+          {withdrawState.warning ? (
+            <WaringText>
+              {
+                {
+                  [ERC20_STATUS.INSUFFICIENT_BALANCE]:
+                    'insufficient dai balance',
+                  [ERC20_STATUS.INSUFFICIENT_ALLOWANCE]:
+                    'insufficient dai allowance',
+                }[withdrawState.warning]
+              }
+            </WaringText>
+          ) : null}
+          {withdrawState.warning === ERC20_STATUS.INSUFFICIENT_ALLOWANCE ? (
+            <Button onClick={approveDai} active={true}>
+              approve
+            </Button>
+          ) : (
+            <Button onClick={burn} active={new BigNumber(tCDPAmount).gt(0)}>
+              withdraw
+            </Button>
+          )}
         </TabPanelContent>
       </TabPanel>
     </PanelWrapper>

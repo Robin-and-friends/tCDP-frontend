@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import styled from 'styled-components'
 
 const Container = styled.div`
@@ -29,23 +29,22 @@ const Button = styled.div`
   cursor: pointer;
 `
 
-const COMPOUND = 'compound'
-const AAVE = 'aave'
-
-export default function ProtocolSelector() {
-  const [protocol, setProtocol] = useState(COMPOUND)
-
+export default function ProtocolSelector({
+  protocols,
+  currentProtocolId,
+  setProtocol,
+}) {
   return (
     <Container>
-      <Button
-        active={protocol === COMPOUND}
-        onClick={() => setProtocol(COMPOUND)}
-      >
-        Compound
-      </Button>
-      <Button active={protocol === AAVE} onClick={() => setProtocol(AAVE)}>
-        AAVE
-      </Button>
+      {protocols.map(({ id, text }) => (
+        <Button
+          active={currentProtocolId === id}
+          onClick={() => setProtocol(id)}
+          key={id}
+        >
+          {text}
+        </Button>
+      ))}
     </Container>
   )
 }

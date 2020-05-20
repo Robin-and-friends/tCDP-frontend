@@ -1,5 +1,8 @@
-import React, { useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useWeb3React } from '@web3-react/core'
 import styled from 'styled-components'
+import BigNumber from 'bignumber.js'
+import { useTCDPState, useERC20State } from '../hooks/ethereum'
 import ProtocolSelector from '../components/ProtocolSelector'
 import FunctionPanel from '../components/FunctionPanel'
 import { ReactComponent as RebalanceIcon } from '../assets/rebalance.svg'
@@ -128,51 +131,113 @@ const StyledArrowRightIcon = styled(ArrowRightIcon)`
   align-self: flex-start;
 `
 
-export default function Home() {
-  const collateral = null
-  const debt = null
-  const collateralRatio = useMemo(() => {
-    if (collateral && debt) {
-      return collateral.div(debt)
-    }
-  }, [collateral, debt])
+const contractAddress = {
+  1: {
+    compound: '',
+    aave: '',
+    dai: '',
+  },
+  4: {
+    compound: '0x59f76d251f117aa6546fdbe029ec13b7f28e8911',
+    aave: '',
+    dai: '0x5592ec0cfb4dbc12d3ab100b257153436a1f0fea',
+  },
+  42: {
+    compound: '',
+    aave: '',
+    dai: '',
+  },
+}
 
-  const totalSupply = null
-  const balance = null
+const protocols = [
+  {
+    id: 'compound',
+    text: 'Compound',
+  },
+  {
+    id: 'aave',
+    text: 'AAVE',
+  },
+]
+
+export default function Home() {
+  const { chainId, account, library } = useWeb3React()
+  const [balance, setBalance] = useState(new BigNumber(0))
+  const [protocol, setProtocol] = useState(protocols[0].id)
+  const { dai: daiAddress, [protocol]: tCDPAddress } =
+    contractAddress[chainId] || contractAddress[4]
+  const { collateral, debt, collateralRatio } = useTCDPState(tCDPAddress)
+  const {
+    totalSupply: tCDPTotalSupply,
+    balanceOf: tCDPBalance,
+  } = useERC20State(tCDPAddress, account)
+  const { balanceOf: daiBalance, allowance: daiAllowance } = useERC20State(
+    daiAddress,
+    account,
+    tCDPAddress,
+  )
+
+  useEffect(() => {
+    if (!library || !account) {
+      return
+    }
+    library
+      .getBalance(account)
+      .then((newBalance) => setBalance(new BigNumber(newBalance.toString())))
+    return () => {}
+  }, [account, library])
 
   return (
     <>
-      <ProtocolSelector />
+      <ProtocolSelector
+        protocols={protocols}
+        currentProtocolId={protocol}
+        setProtocol={setProtocol}
+      />
       <Container>
         <Block>
           <Row>
             <Text>CDP ETH Locked</Text>
             <Value>
-              {collateral ? `${amountFormatter(collateral)} ETH` : '-'}
+              {collateral ? `${amountFormatter(collateral, 18)} ETH` : '-'}
             </Value>
           </Row>
           <Row>
             <Text>CDP Borrowing</Text>
-            <Value>{debt ? `${amountFormatter(debt)} DAI` : '-'}</Value>
+            <Value>{debt ? `${amountFormatter(debt, 18)} DAI` : '-'}</Value>
           </Row>
           <Row>
             <Text>CDP Collateralization Ratio</Text>
             <Value>
-              {collateralRatio ? percentageFormatter(collateralRatio) : '-'}
+              {collateralRatio ? percentageFormatter(collateralRatio, 0) : '-'}
             </Value>
           </Row>
           <Row>
             <Text>TotalSupply</Text>
             <Value>
-              {totalSupply ? `${amountFormatter(totalSupply)} tCDP` : '-'}
+              {tCDPTotalSupply
+                ? `${amountFormatter(tCDPTotalSupply, 18)} tCDP`
+                : '-'}
             </Value>
           </Row>
           <Row>
             <Text>Your Balance</Text>
-            <Value>{balance ? `${amountFormatter(balance)} tCDP` : '-'}</Value>
+            <Value>
+              {tCDPBalance ? `${amountFormatter(tCDPBalance, 18)} tCDP` : '-'}
+            </Value>
           </Row>
           <PanelRow>
-            <FunctionPanel />
+            <FunctionPanel
+              tCDPAddress={tCDPAddress}
+              daiAddress={daiAddress}
+              collateral={collateral}
+              debt={debt}
+              balance={balance}
+              tCDPTotalSupply={tCDPTotalSupply}
+              tCDPBalance={tCDPBalance}
+              daiBalance={daiBalance}
+              daiAllowance={daiAllowance}
+            />
           </PanelRow>
         </Block>
         <div>

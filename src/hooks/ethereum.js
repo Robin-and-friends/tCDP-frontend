@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useWeb3React } from '@web3-react/core'
+import BigNumber from 'bignumber.js'
 
 import {
   injected as injectedConnector,
@@ -7,6 +8,8 @@ import {
 } from '../connectors'
 import { getContract, getGasPrice } from '../utils'
 import { READ_ONLY } from '../constants'
+import abiTCDP from '../constants/abis/tCDP.json'
+import abiERC20 from '../constants/abis/erc20.json'
 
 export function useContract(address, abi, withSignerIfPossible = true) {
   const { account, library } = useWeb3React()
@@ -23,6 +26,18 @@ export function useContract(address, abi, withSignerIfPossible = true) {
       return null
     }
   }, [address, abi, library, account, withSignerIfPossible])
+}
+
+export function useContractRO(address, abi) {
+  const { library } = useWeb3React(READ_ONLY)
+
+  return useMemo(() => {
+    try {
+      return getContract(address, abi, library)
+    } catch {
+      return null
+    }
+  }, [address, abi, library])
 }
 
 export function useGasPrice() {
@@ -120,4 +135,93 @@ export function useReadOnlyConnect() {
   }, [active, activeReadOnly, chainId, changeChainId])
 
   return changeChainId
+}
+
+export function useContractState(
+  address,
+  abi,
+  fnsToWatch = [],
+  ...reloadSignals
+) {
+  const contract = useContractRO(address, abi)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(undefined)
+  const [contactState, setContactState] = useState({})
+
+  useEffect(() => {
+    if (!contract) {
+      setError('Contract not available')
+      setContactState({})
+      return () => {}
+    }
+    Promise.all(
+      fnsToWatch.map((fn) =>
+        fn.name ? contract[fn.name](...(fn.args || [])) : contract[fn](),
+      ),
+    )
+      .then((result) => {
+        setContactState(
+          fnsToWatch.reduce(
+            (newContactState, fn, i) => ({
+              ...newContactState,
+              [fn.name ? fn.name : fn]: result[i]._isBigNumber
+                ? new BigNumber(result[i].toString())
+                : result[i],
+            }),
+            {},
+          ),
+        )
+        setError(undefined)
+      })
+      .catch((error) => {
+        if (error.code && error.code === 'CALL_EXCEPTION') {
+          return
+        }
+        setContactState({})
+        setError(error)
+      })
+      .finally(setLoading.bind(null, false))
+  }, [contract, address, abi, ...reloadSignals]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return {
+    loading,
+    error,
+    ...contactState,
+  }
+}
+
+export function useTCDPState(address, ...reloadSignals) {
+  const contractState = useContractState(
+    address,
+    abiTCDP,
+    ['collateral', 'debt', 'debtRatio'],
+    ...reloadSignals,
+  )
+  return {
+    ...contractState,
+    collateralRatio: contractState.debtRatio
+      ? new BigNumber(10).pow(new BigNumber(18)).div(contractState.debtRatio)
+      : undefined,
+  }
+}
+
+export function useERC20State(
+  address,
+  ownerAddress,
+  approvedAddress,
+  ...reloadSignals
+) {
+  return useContractState(
+    address,
+    abiERC20,
+    [
+      'totalSupply',
+      ...(ownerAddress ? [{ name: 'balanceOf', args: [ownerAddress] }] : []),
+      ...(ownerAddress && approvedAddress
+        ? [{ name: 'allowance', args: [ownerAddress, approvedAddress] }]
+        : []),
+    ],
+    ownerAddress,
+    ...reloadSignals,
+  )
 }
