@@ -60,6 +60,22 @@ export const ERC20_STATUS = {
   INSUFFICIENT_ALLOWANCE: 'INSUFFICIENT_ALLOWANCE',
 }
 
+export const TCDP_STATUS = {
+  OK: 'OK',
+  COLLATERALIZATION_RATIO_TOO_HIGH: 'COLLATERALIZATION_RATIO_TOO_HIGH',
+  COLLATERALIZATION_RATIO_TOO_LOW: 'COLLATERALIZATION_RATIO_TOO_LOW',
+}
+
+export const UPPER_COLLATERALIZATION_RATIO = new BigNumber(1).div(
+  new BigNumber(0.35),
+) // 1 / 0.35 ~= 286%
+export const IDEAL_COLLATERALIZATION_RATIO = new BigNumber(1).div(
+  new BigNumber(0.4),
+) // 1 / 0.40 ~= 250%
+export const LOWER_COLLATERALIZATION_RATIO = new BigNumber(1).div(
+  new BigNumber(0.45),
+) // 1 / 0.45 ~= 222%
+
 export const MAX_UINT256 = new BigNumber(2).pow(256).minus(new BigNumber(1))
 export const GAS_FEE_RESERVATION = etherToWei('0.02')
 

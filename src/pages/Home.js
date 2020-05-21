@@ -4,6 +4,7 @@ import styled from 'styled-components'
 import {
   useCurrentBlockNumber,
   useEthBalance,
+  useContract,
   useERC20State,
   useTCDPState,
 } from '../hooks/ethereum'
@@ -11,7 +12,15 @@ import ProtocolSelector from '../components/ProtocolSelector'
 import FunctionPanel from '../components/FunctionPanel'
 import { ReactComponent as RebalanceIcon } from '../assets/rebalance.svg'
 import { ReactComponent as ArrowRightIcon } from '../assets/arrow-right.svg'
-import { amountFormatter, percentageFormatter } from '../utils'
+import {
+  TCDP_STATUS,
+  UPPER_COLLATERALIZATION_RATIO,
+  IDEAL_COLLATERALIZATION_RATIO,
+  LOWER_COLLATERALIZATION_RATIO,
+  amountFormatter,
+  percentageFormatter,
+} from '../utils'
+import abiTCDP from '../constants/abis/tCDP.json'
 
 const Container = styled.div`
   width: 100%;
@@ -185,6 +194,27 @@ export default function Home() {
     tCDPAddress,
     blockNumber,
   )
+  const tCDPStatus =
+    (collateralRatio &&
+      (collateralRatio.gt(UPPER_COLLATERALIZATION_RATIO)
+        ? TCDP_STATUS.COLLATERALIZATION_RATIO_TOO_HIGH
+        : collateralRatio.lt(LOWER_COLLATERALIZATION_RATIO)
+        ? TCDP_STATUS.COLLATERALIZATION_RATIO_TOO_LOW
+        : TCDP_STATUS.OK)) ||
+    TCDP_STATUS.OK
+  const tCDP = useContract(tCDPAddress, abiTCDP)
+
+  const rebalance = () => {
+    switch (tCDPStatus) {
+      case TCDP_STATUS.COLLATERALIZATION_RATIO_TOO_HIGH:
+        tCDP.leverage()
+        return
+      case TCDP_STATUS.COLLATERALIZATION_RATIO_TOO_LOW:
+        tCDP.deleverage()
+        return
+      default:
+    }
+  }
 
   return (
     <>
@@ -278,19 +308,31 @@ export default function Home() {
             <Row>
               <div style={{ flex: '1 1' }}>
                 <Text>Collateralization Ratio Difference</Text>
-                <BigText>20%</BigText>
+                <BigText>
+                  {(collateralRatio &&
+                    percentageFormatter(
+                      collateralRatio.minus(IDEAL_COLLATERALIZATION_RATIO),
+                      0,
+                    )) ||
+                    '-'}
+                </BigText>
               </div>
               <StyledArrowRightIcon />
               <div style={{ alignSelf: 'flex-start' }}>
                 <Text>
                   <Strong>25% difference required</Strong>
                 </Text>
-                <Row>
-                  <RebalanceIcon />
-                  <Text>
-                    <Bold>Rebalance Ready!</Bold>
-                  </Text>
-                </Row>
+                {tCDPStatus !== TCDP_STATUS.OK ? (
+                  <Row>
+                    <RebalanceIcon
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => rebalance()}
+                    />
+                    <Text>
+                      <Bold>Rebalance Ready!</Bold>
+                    </Text>
+                  </Row>
+                ) : null}
               </div>
             </Row>
           </Block>
