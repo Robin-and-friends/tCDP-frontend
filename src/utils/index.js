@@ -54,31 +54,6 @@ export function getNetworkName(networkId) {
   }
 }
 
-export const ERC20_STATUS = {
-  OK: 'OK',
-  INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
-  INSUFFICIENT_ALLOWANCE: 'INSUFFICIENT_ALLOWANCE',
-}
-
-export const TCDP_STATUS = {
-  OK: 'OK',
-  COLLATERALIZATION_RATIO_TOO_HIGH: 'COLLATERALIZATION_RATIO_TOO_HIGH',
-  COLLATERALIZATION_RATIO_TOO_LOW: 'COLLATERALIZATION_RATIO_TOO_LOW',
-}
-
-export const UPPER_COLLATERALIZATION_RATIO = new BigNumber(1).div(
-  new BigNumber(0.35),
-) // 1 / 0.35 ~= 286%
-export const IDEAL_COLLATERALIZATION_RATIO = new BigNumber(1).div(
-  new BigNumber(0.4),
-) // 1 / 0.40 ~= 250%
-export const LOWER_COLLATERALIZATION_RATIO = new BigNumber(1).div(
-  new BigNumber(0.45),
-) // 1 / 0.45 ~= 222%
-
-export const MAX_UINT256 = new BigNumber(2).pow(256).minus(new BigNumber(1))
-export const GAS_FEE_RESERVATION = etherToWei('0.02')
-
 const ETHERSCAN_PREFIXES = {
   1: '',
   3: 'ropsten.',
@@ -127,18 +102,6 @@ export function getContract(address, abi, library, account) {
     abi,
     getProviderOrSigner(library, account),
   )
-}
-
-export function safeToString(bignumber, fallback = '0') {
-  const string = bignumber.toString()
-  if (string === 'NaN') {
-    return fallback
-  }
-  return string
-}
-
-export function isValidFloat(float) {
-  return /[+-]?([0-9]*[.])?[0-9]+/.test(float)
 }
 
 export function etherToWei(amountInEther) {

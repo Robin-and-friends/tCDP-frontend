@@ -1,18 +1,14 @@
 import React, { useState, useCallback } from 'react'
 import styled from 'styled-components'
-import BigNumber from 'bignumber.js'
 import AmountInput from './AmountInput'
 import { useContract } from '../hooks/ethereum'
 import {
+  ZERO_UINT256,
   MAX_UINT256,
   GAS_FEE_RESERVATION,
   ERC20_STATUS,
-  amountFormatter,
-  bigToHex,
-  etherToWei,
-  isValidFloat,
-  safeToString,
-} from '../utils'
+} from '../constants'
+import { amountFormatter, bigToHex, etherToWei } from '../utils'
 import abiTCDP from '../constants/abis/tCDP.json'
 import abiERC20 from '../constants/abis/erc20.json'
 
@@ -112,49 +108,79 @@ const DEPOSIT = 'deposit'
 const WITHDRAW = 'withdraw'
 
 export default function FunctionPanel({
-  balance,
   tCDPAddress,
   daiAddress,
-  collateral = new BigNumber(0),
-  debt = new BigNumber(0),
-  tCDPBalance = new BigNumber(0),
-  tCDPTotalSupply = new BigNumber(0),
-  daiBalance = new BigNumber(0),
-  daiAllowance = new BigNumber(0),
+  balance = ZERO_UINT256,
+  collateral = ZERO_UINT256,
+  debt = ZERO_UINT256,
+  tCDPBalance = ZERO_UINT256,
+  tCDPTotalSupply = ZERO_UINT256,
+  daiBalance = ZERO_UINT256,
+  daiAllowance = ZERO_UINT256,
 }) {
   const [tab, setTab] = useState(DEPOSIT)
-  const [ethAmount, setEthAmount] = useState('0')
-  const [tCDPAmount, setTCDPAmount] = useState('0')
+  const [ethAmount, setEthAmount] = useState('')
+  const [tCDPAmount, setTCDPAmount] = useState('')
+  const [ethAmountBig, tCDPAmountBig] = [
+    etherToWei(ethAmount || 0),
+    etherToWei(tCDPAmount || 0),
+  ]
 
   const depositState = {
-    maxToDeposit: balance.minus(GAS_FEE_RESERVATION).gt(0)
+    maxToDeposit: balance.minus(GAS_FEE_RESERVATION).isPositive()
       ? balance.minus(GAS_FEE_RESERVATION)
-      : new BigNumber(0),
-    receiveDai: new BigNumber(ethAmount).times(tCDPTotalSupply).div(collateral),
-    receiveTCDP: new BigNumber(ethAmount).times(debt).div(collateral),
+      : ZERO_UINT256,
+    receiveDai:
+      collateral.gt(0) && ethAmountBig.gt(0)
+        ? ethAmountBig.times(tCDPTotalSupply).div(collateral)
+        : ZERO_UINT256,
+    receiveTCDP:
+      collateral.gt(0) && ethAmountBig.gt(0)
+        ? ethAmountBig.times(debt).div(collateral)
+        : ZERO_UINT256,
   }
+  depositState.etherStatus = ethAmountBig.gt(depositState.maxToDeposit)
+    ? ERC20_STATUS.INSUFFICIENT_BALANCE
+    : ERC20_STATUS.OK
+  depositState.ok =
+    ethAmountBig.gt(0) && depositState.etherStatus === ERC20_STATUS.OK
 
   const withdrawState = {
-    payDai: new BigNumber(tCDPAmount).times(debt).div(tCDPTotalSupply),
-    receiveEth: new BigNumber(tCDPAmount)
-      .times(collateral)
-      .div(tCDPTotalSupply),
+    payDai:
+      tCDPTotalSupply.gt(0) && tCDPAmountBig.gt(0)
+        ? tCDPAmountBig.times(debt).div(tCDPTotalSupply)
+        : ZERO_UINT256,
+    receiveEth:
+      tCDPTotalSupply.gt(0) && tCDPAmountBig.gt(0)
+        ? tCDPAmountBig.times(collateral).div(tCDPTotalSupply)
+        : ZERO_UINT256,
   }
-  withdrawState.daiStatus = daiBalance.lt(etherToWei(withdrawState.payDai))
+  withdrawState.tCDPStatus = tCDPAmountBig.gt(tCDPBalance)
     ? ERC20_STATUS.INSUFFICIENT_BALANCE
-    : daiAllowance.lt(etherToWei(withdrawState.payDai))
+    : ERC20_STATUS.OK
+  withdrawState.daiStatus = withdrawState.payDai.gt(daiBalance)
+    ? ERC20_STATUS.INSUFFICIENT_BALANCE
+    : withdrawState.payDai.gt(daiAllowance)
     ? ERC20_STATUS.INSUFFICIENT_ALLOWANCE
     : ERC20_STATUS.OK
+  withdrawState.ok =
+    tCDPAmountBig.gt(0) &&
+    withdrawState.tCDPStatus === ERC20_STATUS.OK &&
+    withdrawState.daiStatus === ERC20_STATUS.OK
 
   const tCDP = useContract(tCDPAddress, abiTCDP)
   const dai = useContract(daiAddress, abiERC20)
 
   const mint = () => {
-    tCDP.mint({ value: bigToHex(etherToWei(ethAmount)) })
+    if (depositState.ok) {
+      tCDP.mint({ value: bigToHex(ethAmountBig) })
+    }
   }
 
   const burn = () => {
-    tCDP.burn(bigToHex(etherToWei(tCDPAmount)))
+    if (withdrawState.ok) {
+      tCDP.burn(bigToHex(tCDPAmountBig))
+    }
   }
 
   const approveDai = () => {
@@ -165,47 +191,9 @@ export default function FunctionPanel({
     setEthAmount(amountFormatter(depositState.maxToDeposit, 18, 18, true))
   }, [depositState.maxToDeposit])
 
-  const setNewEthAmount = useCallback(
-    (value) => {
-      if (value === '' || value[0] === '-') {
-        // ignore empty and negative
-        setEthAmount('0')
-        return
-      }
-      if (!isValidFloat(value)) {
-        return
-      }
-      if (etherToWei(new BigNumber(value)).gt(depositState.maxToDeposit)) {
-        setMaxEthAmount()
-      } else {
-        setEthAmount(value)
-      }
-    },
-    [depositState.maxToDeposit, setMaxEthAmount],
-  )
-
   const setMaxTCDPAmount = useCallback(() => {
     setTCDPAmount(amountFormatter(tCDPBalance, 18, 18, true))
   }, [tCDPBalance])
-
-  const setNewTCDPAmount = useCallback(
-    (value) => {
-      if (value === '' || value[0] === '-') {
-        // ignore empty and negative
-        setTCDPAmount('0')
-        return
-      }
-      if (!isValidFloat(value)) {
-        return
-      }
-      if (etherToWei(new BigNumber(value)).gt(tCDPBalance)) {
-        setMaxTCDPAmount()
-      } else {
-        setTCDPAmount(value)
-      }
-    },
-    [tCDPBalance, setMaxTCDPAmount],
-  )
 
   return (
     <PanelWrapper>
@@ -222,18 +210,18 @@ export default function FunctionPanel({
             <Label>Deposit ETH</Label>
             <AmountInput
               value={ethAmount}
-              onChange={(event) => setNewEthAmount(event.target.value)}
+              onChange={(event) => setEthAmount(event.target.value)}
               onMax={setMaxEthAmount}
             />
           </Fieldset>
           <Fieldset>
             <Label>You will receive</Label>
             <ResultText>
-              {safeToString(depositState.receiveDai)} tCDP +{' '}
-              {safeToString(depositState.receiveTCDP)} DAI
+              {amountFormatter(depositState.receiveDai, 18, 18)} tCDP +{' '}
+              {amountFormatter(depositState.receiveTCDP, 18, 18)} DAI
             </ResultText>
           </Fieldset>
-          <Button onClick={mint} active={new BigNumber(ethAmount).gt(0)}>
+          <Button onClick={mint} active={depositState.ok}>
             deposit
           </Button>
         </TabPanelContent>
@@ -244,18 +232,20 @@ export default function FunctionPanel({
             <Label>Withdraw tCDP</Label>
             <AmountInput
               value={tCDPAmount}
-              onChange={(event) => setNewTCDPAmount(event.target.value)}
+              onChange={(event) => setTCDPAmount(event.target.value)}
               onMax={setMaxTCDPAmount}
             />
           </Fieldset>
           <Fieldset>
             <Label>You need repay </Label>
-            <ResultText>{safeToString(withdrawState.payDai)} DAI</ResultText>
+            <ResultText>
+              {amountFormatter(withdrawState.payDai, 18, 18)} DAI
+            </ResultText>
           </Fieldset>
           <Fieldset>
             <Label>You will receive</Label>
             <ResultText>
-              {safeToString(withdrawState.receiveEth)} ETH
+              {amountFormatter(withdrawState.receiveEth, 18, 18)} ETH
             </ResultText>
           </Fieldset>
           <WaringText>
@@ -272,7 +262,7 @@ export default function FunctionPanel({
               approve
             </Button>
           ) : (
-            <Button onClick={burn} active={new BigNumber(tCDPAmount).gt(0)}>
+            <Button onClick={burn} active={withdrawState.ok}>
               withdraw
             </Button>
           )}

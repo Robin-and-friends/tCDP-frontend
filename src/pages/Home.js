@@ -17,9 +17,8 @@ import {
   UPPER_COLLATERALIZATION_RATIO,
   IDEAL_COLLATERALIZATION_RATIO,
   LOWER_COLLATERALIZATION_RATIO,
-  amountFormatter,
-  percentageFormatter,
-} from '../utils'
+} from '../constants'
+import { amountFormatter, percentageFormatter } from '../utils'
 import abiTCDP from '../constants/abis/tCDP.json'
 
 const Container = styled.div`
