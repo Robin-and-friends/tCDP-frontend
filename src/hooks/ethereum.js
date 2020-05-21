@@ -137,6 +137,39 @@ export function useReadOnlyConnect() {
   return changeChainId
 }
 
+export function useEthBalance(address, ...reloadSignals) {
+  const { library } = useWeb3React(READ_ONLY)
+  const [balance, setBalance] = useState(new BigNumber(0))
+  useEffect(() => {
+    if (!library || !address) {
+      return
+    }
+    library
+      .getBalance(address)
+      .then((newBalance) => setBalance(new BigNumber(newBalance.toString())))
+  }, [address, library, ...reloadSignals]) // eslint-disable-line react-hooks/exhaustive-deps
+  return balance
+}
+
+export function useCurrentBlockNumber() {
+  const { library } = useWeb3React(READ_ONLY)
+  const [blockNumber, setBlockNumber] = useState(new BigNumber(0))
+  useEffect(() => {
+    if (!library) {
+      return
+    }
+    const interval = setInterval(() => {
+      library
+        .getBlockNumber()
+        .then((newBlockNumber) =>
+          setBlockNumber(new BigNumber(newBlockNumber.toString())),
+        )
+    }, 15000) // 15 second for a block
+    return () => clearInterval(interval)
+  }, [library])
+  return blockNumber
+}
+
 export function useContractState(
   address,
   abi,

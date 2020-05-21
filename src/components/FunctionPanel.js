@@ -5,6 +5,7 @@ import AmountInput from './AmountInput'
 import { useContract } from '../hooks/ethereum'
 import {
   MAX_UINT256,
+  GAS_FEE_RESERVATION,
   ERC20_STATUS,
   amountFormatter,
   bigToHex,
@@ -111,11 +112,11 @@ const DEPOSIT = 'deposit'
 const WITHDRAW = 'withdraw'
 
 export default function FunctionPanel({
+  balance,
   tCDPAddress,
   daiAddress,
   collateral = new BigNumber(0),
   debt = new BigNumber(0),
-  balance = new BigNumber(0),
   tCDPBalance = new BigNumber(0),
   tCDPTotalSupply = new BigNumber(0),
   daiBalance = new BigNumber(0),
@@ -146,7 +147,9 @@ export default function FunctionPanel({
   const dai = useContract(daiAddress, abiERC20)
 
   const mint = () => {
-    tCDP.mint({ value: bigToHex(etherToWei(ethAmount)) })
+    tCDP.mint({
+      value: bigToHex(etherToWei(ethAmount).minus(GAS_FEE_RESERVATION)),
+    })
   }
 
   const burn = () => {

@@ -1,8 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useWeb3React } from '@web3-react/core'
 import styled from 'styled-components'
-import BigNumber from 'bignumber.js'
-import { useTCDPState, useERC20State } from '../hooks/ethereum'
+import {
+  useCurrentBlockNumber,
+  useEthBalance,
+  useERC20State,
+  useTCDPState,
+} from '../hooks/ethereum'
 import ProtocolSelector from '../components/ProtocolSelector'
 import FunctionPanel from '../components/FunctionPanel'
 import { ReactComponent as RebalanceIcon } from '../assets/rebalance.svg'
@@ -161,31 +165,26 @@ const protocols = [
 ]
 
 export default function Home() {
-  const { chainId, account, library } = useWeb3React()
-  const [balance, setBalance] = useState(new BigNumber(0))
+  const { chainId, account } = useWeb3React()
+  const blockNumber = useCurrentBlockNumber().toString()
+  const balance = useEthBalance(account, blockNumber)
   const [protocol, setProtocol] = useState(protocols[0].id)
   const { dai: daiAddress, [protocol]: tCDPAddress } =
     contractAddress[chainId] || contractAddress[4]
-  const { collateral, debt, collateralRatio } = useTCDPState(tCDPAddress)
+  const { collateral, debt, collateralRatio } = useTCDPState(
+    tCDPAddress,
+    blockNumber,
+  )
   const {
     totalSupply: tCDPTotalSupply,
     balanceOf: tCDPBalance,
-  } = useERC20State(tCDPAddress, account)
+  } = useERC20State(tCDPAddress, account, undefined, blockNumber)
   const { balanceOf: daiBalance, allowance: daiAllowance } = useERC20State(
     daiAddress,
     account,
     tCDPAddress,
+    blockNumber,
   )
-
-  useEffect(() => {
-    if (!library || !account) {
-      return
-    }
-    library
-      .getBalance(account)
-      .then((newBalance) => setBalance(new BigNumber(newBalance.toString())))
-    return () => {}
-  }, [account, library])
 
   return (
     <>
@@ -228,11 +227,11 @@ export default function Home() {
           </Row>
           <PanelRow>
             <FunctionPanel
+              balance={balance}
               tCDPAddress={tCDPAddress}
               daiAddress={daiAddress}
               collateral={collateral}
               debt={debt}
-              balance={balance}
               tCDPTotalSupply={tCDPTotalSupply}
               tCDPBalance={tCDPBalance}
               daiBalance={daiBalance}

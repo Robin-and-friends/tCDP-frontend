@@ -61,6 +61,7 @@ export const ERC20_STATUS = {
 }
 
 export const MAX_UINT256 = new BigNumber(2).pow(256).minus(new BigNumber(1))
+export const GAS_FEE_RESERVATION = etherToWei('0.02')
 
 const ETHERSCAN_PREFIXES = {
   1: '',
