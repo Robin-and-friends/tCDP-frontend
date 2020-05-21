@@ -127,6 +127,9 @@ export default function FunctionPanel({
   const [tCDPAmount, setTCDPAmount] = useState('0')
 
   const depositState = {
+    maxToDeposit: balance.minus(GAS_FEE_RESERVATION).gt(0)
+      ? balance.minus(GAS_FEE_RESERVATION)
+      : new BigNumber(0),
     receiveDai: new BigNumber(ethAmount).times(tCDPTotalSupply).div(collateral),
     receiveTCDP: new BigNumber(ethAmount).times(debt).div(collateral),
   }
@@ -137,7 +140,7 @@ export default function FunctionPanel({
       .times(collateral)
       .div(tCDPTotalSupply),
   }
-  withdrawState.warning = daiBalance.lt(etherToWei(withdrawState.payDai))
+  withdrawState.daiStatus = daiBalance.lt(etherToWei(withdrawState.payDai))
     ? ERC20_STATUS.INSUFFICIENT_BALANCE
     : daiAllowance.lt(etherToWei(withdrawState.payDai))
     ? ERC20_STATUS.INSUFFICIENT_ALLOWANCE
@@ -147,9 +150,7 @@ export default function FunctionPanel({
   const dai = useContract(daiAddress, abiERC20)
 
   const mint = () => {
-    tCDP.mint({
-      value: bigToHex(etherToWei(ethAmount).minus(GAS_FEE_RESERVATION)),
-    })
+    tCDP.mint({ value: bigToHex(etherToWei(ethAmount)) })
   }
 
   const burn = () => {
@@ -161,25 +162,26 @@ export default function FunctionPanel({
   }
 
   const setMaxEthAmount = useCallback(() => {
-    setEthAmount(amountFormatter(balance, 18, 18, true))
-  }, [balance])
+    setEthAmount(amountFormatter(depositState.maxToDeposit, 18, 18, true))
+  }, [depositState.maxToDeposit])
 
   const setNewEthAmount = useCallback(
     (value) => {
-      if (value === '') {
+      if (value === '' || value[0] === '-') {
+        // ignore empty and negative
         setEthAmount('0')
+        return
       }
       if (!isValidFloat(value)) {
         return
       }
-      const newAmount = etherToWei(new BigNumber(value))
-      if (newAmount.gt(balance)) {
+      if (etherToWei(new BigNumber(value)).gt(depositState.maxToDeposit)) {
         setMaxEthAmount()
       } else {
         setEthAmount(value)
       }
     },
-    [balance, setMaxEthAmount],
+    [depositState.maxToDeposit, setMaxEthAmount],
   )
 
   const setMaxTCDPAmount = useCallback(() => {
@@ -188,14 +190,15 @@ export default function FunctionPanel({
 
   const setNewTCDPAmount = useCallback(
     (value) => {
-      if (value === '') {
+      if (value === '' || value[0] === '-') {
+        // ignore empty and negative
         setTCDPAmount('0')
+        return
       }
       if (!isValidFloat(value)) {
         return
       }
-      const newAmount = etherToWei(new BigNumber(value))
-      if (newAmount.gt(tCDPBalance)) {
+      if (etherToWei(new BigNumber(value)).gt(tCDPBalance)) {
         setMaxTCDPAmount()
       } else {
         setTCDPAmount(value)
@@ -255,19 +258,16 @@ export default function FunctionPanel({
               {safeToString(withdrawState.receiveEth)} ETH
             </ResultText>
           </Fieldset>
-          {withdrawState.warning ? (
-            <WaringText>
+          <WaringText>
+            {
               {
-                {
-                  [ERC20_STATUS.INSUFFICIENT_BALANCE]:
-                    'insufficient dai balance',
-                  [ERC20_STATUS.INSUFFICIENT_ALLOWANCE]:
-                    'insufficient dai allowance',
-                }[withdrawState.warning]
-              }
-            </WaringText>
-          ) : null}
-          {withdrawState.warning === ERC20_STATUS.INSUFFICIENT_ALLOWANCE ? (
+                [ERC20_STATUS.INSUFFICIENT_BALANCE]: 'insufficient dai balance',
+                [ERC20_STATUS.INSUFFICIENT_ALLOWANCE]:
+                  'insufficient dai allowance',
+              }[withdrawState.daiStatus]
+            }
+          </WaringText>
+          {withdrawState.daiStatus === ERC20_STATUS.INSUFFICIENT_ALLOWANCE ? (
             <Button onClick={approveDai} active={true}>
               approve
             </Button>
