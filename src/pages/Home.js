@@ -145,56 +145,25 @@ const StyledArrowRightIcon = styled(ArrowRightIcon)`
 
 const contractAddress = {
   1: {
-    compound: {
-      tCDP: '',
-      dai: '0x6b175474e89094c44da98b954eedeac495271d0f',
-    },
-    aave: {
-      tCDP: '',
-      dai: '0x6b175474e89094c44da98b954eedeac495271d0f',
-    },
+    tCDP: '',
+    dai: '0x6b175474e89094c44da98b954eedeac495271d0f',
   },
   4: {
-    compound: {
-      tCDP: '0xae5e23e7c1820E10c8aB850B456D36aED6225bff',
-      dai: '0x5592ec0cfb4dbc12d3ab100b257153436a1f0fea',
-    },
-    aave: {
-      tCDP: '',
-      dai: '',
-    },
+    tCDP: '0xae5e23e7c1820E10c8aB850B456D36aED6225bff',
+    dai: '0x5592ec0cfb4dbc12d3ab100b257153436a1f0fea',
   },
   42: {
-    compound: {
-      tCDP: '',
-      dai: '',
-    },
-    aave: {
-      tCDP: '',
-      dai: '',
-    },
+    tCDP: '',
+    dai: '',
   },
 }
-
-const protocols = [
-  {
-    id: 'compound',
-    text: 'Compound',
-  },
-  {
-    id: 'aave',
-    text: 'AAVE',
-  },
-]
 
 export default function Home() {
   const { chainId, account } = useWeb3React()
   const blockNumber = useCurrentBlockNumber().toString()
   const balance = useEthBalance(account, blockNumber)
-  const [protocol, setProtocol] = useState(protocols[0].id)
-  const {
-    [protocol]: { dai: daiAddress, tCDP: tCDPAddress },
-  } = contractAddress[chainId] || contractAddress[4]
+  const { dai: daiAddress, tCDP: tCDPAddress } =
+    contractAddress[chainId] || contractAddress[4]
   const {
     collateral,
     debt,
@@ -217,7 +186,9 @@ export default function Home() {
   const tCDPStatus =
     (collateralRatio &&
       (collateralRatio.gt(UPPER_COLLATERALIZATION_RATIO)
-        ? TCDP_STATUS.COLLATERALIZATION_RATIO_TOO_HIGH
+        ? collateralRatio.isFinite()
+          ? TCDP_STATUS.COLLATERALIZATION_RATIO_TOO_HIGH
+          : TCDP_STATUS.INITIATE_REQUIRED
         : collateralRatio.lt(LOWER_COLLATERALIZATION_RATIO)
         ? TCDP_STATUS.COLLATERALIZATION_RATIO_TOO_LOW
         : TCDP_STATUS.OK)) ||
@@ -238,25 +209,20 @@ export default function Home() {
 
   return (
     <>
-      <ProtocolSelector
-        protocols={protocols}
-        currentProtocolId={protocol}
-        setProtocol={setProtocol}
-      />
       <Container>
         <Block>
           <Row>
-            <Text>CDP ETH Locked</Text>
+            <Text>ETH Locked</Text>
             <Value>
               {collateral ? `${amountFormatter(collateral, 18)} ETH` : '-'}
             </Value>
           </Row>
           <Row>
-            <Text>CDP Borrowing</Text>
+            <Text>Borrowing</Text>
             <Value>{debt ? `${amountFormatter(debt, 18)} DAI` : '-'}</Value>
           </Row>
           <Row>
-            <Text>CDP Collateralization Ratio</Text>
+            <Text>Collateralization Ratio</Text>
             <Value>
               {collateralRatio && collateralRatio.isFinite()
                 ? percentageFormatter(collateralRatio, 0)
@@ -347,6 +313,7 @@ export default function Home() {
                 <Text>Collateralization Ratio Difference</Text>
                 <BigText>
                   {(collateralRatio &&
+                    collateralRatio.isFinite() &&
                     percentageFormatter(
                       collateralRatio.minus(IDEAL_COLLATERALIZATION_RATIO),
                       0,
@@ -359,7 +326,10 @@ export default function Home() {
                 <Text>
                   <Strong>25% difference required</Strong>
                 </Text>
-                {tCDPStatus !== TCDP_STATUS.OK ? (
+                {[
+                  TCDP_STATUS.COLLATERALIZATION_RATIO_TOO_HIGH,
+                  TCDP_STATUS.COLLATERALIZATION_RATIO_TOO_LOW,
+                ].includes(tCDPStatus) ? (
                   <Row>
                     <RebalanceIcon
                       style={{ cursor: 'pointer' }}
