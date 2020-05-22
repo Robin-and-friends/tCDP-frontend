@@ -144,9 +144,7 @@ export default function FunctionPanel({
     : ERC20_STATUS.OK
   depositState.receiveDai =
     depositState.tCDPStatus === TCDP_STATUS.OK
-      ? collateral.gt(0) && ethAmountBig.gt(0)
-        ? ethAmountBig.times(tCDPTotalSupply).div(collateral)
-        : ZERO_UINT256
+      ? ethAmountBig.times(debt).div(collateral)
       : getUnderlyingPrice.gt(0)
       ? etherToWei(
           ethAmountBig
@@ -157,7 +155,9 @@ export default function FunctionPanel({
   depositState.receiveTCDP =
     depositState.tCDPStatus === TCDP_STATUS.OK
       ? collateral.gt(0) && ethAmountBig.gt(0)
-        ? ethAmountBig.times(debt).div(collateral)
+        ? collateral.gt(0) && ethAmountBig.gt(0)
+          ? ethAmountBig.times(tCDPTotalSupply).div(collateral)
+          : ZERO_UINT256
         : ZERO_UINT256
       : ethAmountBig
   depositState.ok =
