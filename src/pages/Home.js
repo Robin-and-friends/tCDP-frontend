@@ -145,19 +145,34 @@ const StyledArrowRightIcon = styled(ArrowRightIcon)`
 
 const contractAddress = {
   1: {
-    compound: '',
-    aave: '',
-    dai: '',
+    compound: {
+      tCDP: '',
+      dai: '0x6b175474e89094c44da98b954eedeac495271d0f',
+    },
+    aave: {
+      tCDP: '',
+      dai: '0x6b175474e89094c44da98b954eedeac495271d0f',
+    },
   },
   4: {
-    compound: '0x59f76d251f117aa6546fdbe029ec13b7f28e8911',
-    aave: '',
-    dai: '0x5592ec0cfb4dbc12d3ab100b257153436a1f0fea',
+    compound: {
+      tCDP: '0x59f76d251f117aa6546fdbe029ec13b7f28e8911',
+      dai: '0x5592ec0cfb4dbc12d3ab100b257153436a1f0fea',
+    },
+    aave: {
+      tCDP: '',
+      dai: '',
+    },
   },
   42: {
-    compound: '',
-    aave: '',
-    dai: '',
+    compound: {
+      tCDP: '',
+      dai: '',
+    },
+    aave: {
+      tCDP: '',
+      dai: '',
+    },
   },
 }
 
@@ -177,8 +192,9 @@ export default function Home() {
   const blockNumber = useCurrentBlockNumber().toString()
   const balance = useEthBalance(account, blockNumber)
   const [protocol, setProtocol] = useState(protocols[0].id)
-  const { dai: daiAddress, [protocol]: tCDPAddress } =
-    contractAddress[chainId] || contractAddress[4]
+  const {
+    [protocol]: { dai: daiAddress, tCDP: tCDPAddress },
+  } = contractAddress[chainId] || contractAddress[4]
   const { collateral, debt, collateralRatio } = useTCDPState(
     tCDPAddress,
     blockNumber,

@@ -5,7 +5,7 @@ import {
   injected as injectedConnector,
   network as networkConnector,
 } from '../connectors'
-import { getContract, getGasPrice } from '../utils'
+import { getContract, getGasPrice, etherToWei } from '../utils'
 import { READ_ONLY } from '../constants'
 import abiTCDP from '../constants/abis/tCDP.json'
 import abiERC20 from '../constants/abis/erc20.json'
@@ -231,8 +231,13 @@ export function useTCDPState(address, ...reloadSignals) {
   )
   return {
     ...contractState,
+    underlyingPrice: contractState.debtRatio
+      ? contractState.debtRatio
+          .times(contractState.collateral)
+          .div(contractState.debt)
+      : undefined,
     collateralRatio: contractState.debtRatio
-      ? new BigNumber(10).pow(new BigNumber(18)).div(contractState.debtRatio)
+      ? etherToWei(1).div(contractState.debtRatio)
       : undefined,
   }
 }
