@@ -151,10 +151,6 @@ const contractAddress = {
     tCDP: '0xae5e23e7c1820E10c8aB850B456D36aED6225bff',
     dai: '0x5592ec0cfb4dbc12d3ab100b257153436a1f0fea',
   },
-  42: {
-    tCDP: '',
-    dai: '',
-  },
 }
 
 export default function Home() {
