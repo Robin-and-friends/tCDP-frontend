@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useWeb3React } from '@web3-react/core'
 import styled from 'styled-components'
 import {
@@ -8,7 +8,6 @@ import {
   useERC20State,
   useTCDPState,
 } from '../hooks/ethereum'
-import ProtocolSelector from '../components/ProtocolSelector'
 import FunctionPanel from '../components/FunctionPanel'
 import { ReactComponent as RebalanceIcon } from '../assets/rebalance.svg'
 import { ReactComponent as ArrowRightIcon } from '../assets/arrow-right.svg'
@@ -151,10 +150,6 @@ const contractAddress = {
   4: {
     tCDP: '0xae5e23e7c1820E10c8aB850B456D36aED6225bff',
     dai: '0x5592ec0cfb4dbc12d3ab100b257153436a1f0fea',
-  },
-  42: {
-    tCDP: '',
-    dai: '',
   },
 }
 
