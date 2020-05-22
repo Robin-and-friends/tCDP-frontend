@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useWeb3React } from '@web3-react/core'
 import styled from 'styled-components'
 import {
@@ -8,7 +8,6 @@ import {
   useERC20State,
   useTCDPState,
 } from '../hooks/ethereum'
-import ProtocolSelector from '../components/ProtocolSelector'
 import FunctionPanel from '../components/FunctionPanel'
 import { ReactComponent as RebalanceIcon } from '../assets/rebalance.svg'
 import { ReactComponent as ArrowRightIcon } from '../assets/arrow-right.svg'

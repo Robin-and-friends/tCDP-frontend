@@ -90,7 +90,7 @@ export default function Web3Status() {
     if (account) {
       return shortenAddress(account)
     } else if (error) {
-      return 'WRONG NETWORK'
+      return 'UNSUPPORTED NETWORK'
     } else {
       return 'LOGIN'
     }

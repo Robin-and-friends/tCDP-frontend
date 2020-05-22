@@ -4,7 +4,7 @@ import { Web3ReactProvider, createWeb3ReactRoot } from '@web3-react/core'
 import { ethers } from 'ethers'
 
 import Home from './pages/Home'
-import Header from './components/Header'
+import Layout from './components/Layout'
 import Web3Manager from './components/Web3Manager'
 import ThemeProvider, { GlobalStyle } from './themes'
 import { READ_ONLY } from './constants'
@@ -20,7 +20,6 @@ function getLibrary(provider) {
 function Router() {
   return (
     <Suspense fallback={null}>
-      <Header />
       <BrowserRouter>
         <Switch>
           <Route exact path='/'>
@@ -36,12 +35,14 @@ function App() {
   return (
     <Web3ReactProvider getLibrary={getLibrary}>
       <Web3ReadOnlyProvider getLibrary={getLibrary}>
-        <Web3Manager>
-          <ThemeProvider>
-            <GlobalStyle />
-            <Router />
-          </ThemeProvider>
-        </Web3Manager>
+        <ThemeProvider>
+          <GlobalStyle />
+          <Layout>
+            <Web3Manager>
+              <Router />
+            </Web3Manager>
+          </Layout>
+        </ThemeProvider>
       </Web3ReadOnlyProvider>
     </Web3ReactProvider>
   )
