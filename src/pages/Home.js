@@ -1,10 +1,25 @@
-import React, { useMemo } from 'react'
+import React, { useState } from 'react'
+import { useWeb3React } from '@web3-react/core'
 import styled from 'styled-components'
+import {
+  useCurrentBlockNumber,
+  useEthBalance,
+  useContract,
+  useERC20State,
+  useTCDPState,
+} from '../hooks/ethereum'
 import ProtocolSelector from '../components/ProtocolSelector'
 import FunctionPanel from '../components/FunctionPanel'
 import { ReactComponent as RebalanceIcon } from '../assets/rebalance.svg'
 import { ReactComponent as ArrowRightIcon } from '../assets/arrow-right.svg'
+import {
+  TCDP_STATUS,
+  UPPER_COLLATERALIZATION_RATIO,
+  IDEAL_COLLATERALIZATION_RATIO,
+  LOWER_COLLATERALIZATION_RATIO,
+} from '../constants'
 import { amountFormatter, percentageFormatter } from '../utils'
+import abiTCDP from '../constants/abis/tCDP.json'
 
 const Container = styled.div`
   width: 100%;
@@ -128,51 +143,133 @@ const StyledArrowRightIcon = styled(ArrowRightIcon)`
   align-self: flex-start;
 `
 
-export default function Home() {
-  const collateral = null
-  const debt = null
-  const collateralRatio = useMemo(() => {
-    if (collateral && debt) {
-      return collateral.div(debt)
-    }
-  }, [collateral, debt])
+const contractAddress = {
+  1: {
+    tCDP: '',
+    dai: '0x6b175474e89094c44da98b954eedeac495271d0f',
+  },
+  4: {
+    tCDP: '0xae5e23e7c1820E10c8aB850B456D36aED6225bff',
+    dai: '0x5592ec0cfb4dbc12d3ab100b257153436a1f0fea',
+  },
+  42: {
+    tCDP: '',
+    dai: '',
+  },
+}
 
-  const totalSupply = null
-  const balance = null
+export default function Home() {
+  const { chainId, account } = useWeb3React()
+  const blockNumber = useCurrentBlockNumber().toString()
+  const balance = useEthBalance(account, blockNumber)
+  const { dai: daiAddress, tCDP: tCDPAddress } =
+    contractAddress[chainId] || contractAddress[4]
+  const {
+    collateral,
+    debt,
+    debtRatio,
+    collateralRatio,
+    getUnderlyingPrice,
+    CompoundDaiAPR,
+    CompoundEthAPR,
+  } = useTCDPState(tCDPAddress, blockNumber)
+  const {
+    totalSupply: tCDPTotalSupply,
+    balanceOf: tCDPBalance,
+  } = useERC20State(tCDPAddress, account, undefined, blockNumber)
+  const { balanceOf: daiBalance, allowance: daiAllowance } = useERC20State(
+    daiAddress,
+    account,
+    tCDPAddress,
+    blockNumber,
+  )
+  const tCDPStatus =
+    (collateralRatio &&
+      (collateralRatio.gt(UPPER_COLLATERALIZATION_RATIO)
+        ? collateralRatio.isFinite()
+          ? TCDP_STATUS.COLLATERALIZATION_RATIO_TOO_HIGH
+          : TCDP_STATUS.INITIATE_REQUIRED
+        : collateralRatio.lt(LOWER_COLLATERALIZATION_RATIO)
+        ? TCDP_STATUS.COLLATERALIZATION_RATIO_TOO_LOW
+        : TCDP_STATUS.OK)) ||
+    TCDP_STATUS.OK
+  const tCDP = useContract(tCDPAddress, abiTCDP)
+
+  const rebalance = () => {
+    switch (tCDPStatus) {
+      case TCDP_STATUS.COLLATERALIZATION_RATIO_TOO_HIGH:
+        tCDP.leverage()
+        return
+      case TCDP_STATUS.COLLATERALIZATION_RATIO_TOO_LOW:
+        tCDP.deleverage()
+        return
+      default:
+    }
+  }
 
   return (
     <>
-      <ProtocolSelector />
       <Container>
         <Block>
           <Row>
-            <Text>CDP ETH Locked</Text>
+            <Text>ETH Locked</Text>
             <Value>
-              {collateral ? `${amountFormatter(collateral)} ETH` : '-'}
+              {collateral ? `${amountFormatter(collateral, 18)} ETH` : '-'}
             </Value>
           </Row>
           <Row>
-            <Text>CDP Borrowing</Text>
-            <Value>{debt ? `${amountFormatter(debt)} DAI` : '-'}</Value>
+            <Text>Borrowing</Text>
+            <Value>{debt ? `${amountFormatter(debt, 18)} DAI` : '-'}</Value>
           </Row>
           <Row>
-            <Text>CDP Collateralization Ratio</Text>
+            <Text>Collateralization Ratio</Text>
             <Value>
-              {collateralRatio ? percentageFormatter(collateralRatio) : '-'}
+              {collateralRatio && collateralRatio.isFinite()
+                ? percentageFormatter(collateralRatio, 0)
+                : '-'}
+            </Value>
+          </Row>
+          <Row>
+            <Text>Funding Rate</Text>
+            <Value>
+              {CompoundDaiAPR
+                ? percentageFormatter(
+                    CompoundEthAPR.minus(
+                      CompoundDaiAPR.div(IDEAL_COLLATERALIZATION_RATIO),
+                    ),
+                    18,
+                  )
+                : '-'}
             </Value>
           </Row>
           <Row>
             <Text>TotalSupply</Text>
             <Value>
-              {totalSupply ? `${amountFormatter(totalSupply)} tCDP` : '-'}
+              {tCDPTotalSupply
+                ? `${amountFormatter(tCDPTotalSupply, 18)} tCDP`
+                : '-'}
             </Value>
           </Row>
           <Row>
             <Text>Your Balance</Text>
-            <Value>{balance ? `${amountFormatter(balance)} tCDP` : '-'}</Value>
+            <Value>
+              {tCDPBalance ? `${amountFormatter(tCDPBalance, 18)} tCDP` : '-'}
+            </Value>
           </Row>
           <PanelRow>
-            <FunctionPanel />
+            <FunctionPanel
+              balance={balance}
+              tCDPAddress={tCDPAddress}
+              daiAddress={daiAddress}
+              collateral={collateral}
+              debt={debt}
+              debtRatio={debtRatio}
+              getUnderlyingPrice={getUnderlyingPrice}
+              tCDPTotalSupply={tCDPTotalSupply}
+              tCDPBalance={tCDPBalance}
+              daiBalance={daiBalance}
+              daiAllowance={daiAllowance}
+            />
           </PanelRow>
         </Block>
         <div>
@@ -214,19 +311,35 @@ export default function Home() {
             <Row>
               <div style={{ flex: '1 1' }}>
                 <Text>Collateralization Ratio Difference</Text>
-                <BigText>20%</BigText>
+                <BigText>
+                  {(collateralRatio &&
+                    collateralRatio.isFinite() &&
+                    percentageFormatter(
+                      collateralRatio.minus(IDEAL_COLLATERALIZATION_RATIO),
+                      0,
+                    )) ||
+                    '-'}
+                </BigText>
               </div>
               <StyledArrowRightIcon />
               <div style={{ alignSelf: 'flex-start' }}>
                 <Text>
                   <Strong>25% difference required</Strong>
                 </Text>
-                <Row>
-                  <RebalanceIcon />
-                  <Text>
-                    <Bold>Rebalance Ready!</Bold>
-                  </Text>
-                </Row>
+                {[
+                  TCDP_STATUS.COLLATERALIZATION_RATIO_TOO_HIGH,
+                  TCDP_STATUS.COLLATERALIZATION_RATIO_TOO_LOW,
+                ].includes(tCDPStatus) ? (
+                  <Row>
+                    <RebalanceIcon
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => rebalance()}
+                    />
+                    <Text>
+                      <Bold>Rebalance Ready!</Bold>
+                    </Text>
+                  </Row>
+                ) : null}
               </div>
             </Row>
           </Block>

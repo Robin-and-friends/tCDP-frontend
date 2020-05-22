@@ -104,6 +104,18 @@ export function getContract(address, abi, library, account) {
   )
 }
 
+export function etherToWei(amountInEther) {
+  return new BigNumber(
+    new BigNumber(amountInEther)
+      .times(new BigNumber(10).pow(18))
+      .decimalPlaces(0),
+  )
+}
+
+export function bigToHex(bignumber) {
+  return `0x${bignumber.toString(16)}`
+}
+
 export function amountFormatter(amount, baseDecimals, displayDecimals = 4) {
   if (
     baseDecimals > 18 ||
@@ -134,11 +146,7 @@ export function amountFormatter(amount, baseDecimals, displayDecimals = 4) {
 }
 
 export function percentageFormatter(amount, baseDecimals, displayDecimals = 2) {
-  if (
-    baseDecimals > 18 ||
-    displayDecimals > 18 ||
-    displayDecimals > baseDecimals
-  ) {
+  if (baseDecimals > 18 || displayDecimals > 18) {
     throw Error(
       `Invalid combination of baseDecimals '${baseDecimals}' and displayDecimals '${displayDecimals}.`,
     )
