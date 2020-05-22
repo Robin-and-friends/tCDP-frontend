@@ -3,12 +3,15 @@ import styled from 'styled-components'
 import AmountInput from './AmountInput'
 import { useContract } from '../hooks/ethereum'
 import {
+  DUST,
+  TCDP_STATUS,
   ZERO_UINT256,
   MAX_UINT256,
   GAS_FEE_RESERVATION,
   ERC20_STATUS,
+  IDEAL_COLLATERALIZATION_RATIO,
 } from '../constants'
-import { amountFormatter, bigToHex, etherToWei } from '../utils'
+import { amountFormatter, bigToHex, etherToWei, weiToEther } from '../utils'
 import abiTCDP from '../constants/abis/tCDP.json'
 import abiERC20 from '../constants/abis/erc20.json'
 
@@ -113,6 +116,8 @@ export default function FunctionPanel({
   balance = ZERO_UINT256,
   collateral = ZERO_UINT256,
   debt = ZERO_UINT256,
+  debtRatio = ZERO_UINT256,
+  getUnderlyingPrice = ZERO_UINT256,
   tCDPBalance = ZERO_UINT256,
   tCDPTotalSupply = ZERO_UINT256,
   daiBalance = ZERO_UINT256,
@@ -130,20 +135,35 @@ export default function FunctionPanel({
     maxToDeposit: balance.minus(GAS_FEE_RESERVATION).isPositive()
       ? balance.minus(GAS_FEE_RESERVATION)
       : ZERO_UINT256,
-    receiveDai:
-      collateral.gt(0) && ethAmountBig.gt(0)
-        ? ethAmountBig.times(tCDPTotalSupply).div(collateral)
-        : ZERO_UINT256,
-    receiveTCDP:
-      collateral.gt(0) && ethAmountBig.gt(0)
-        ? ethAmountBig.times(debt).div(collateral)
-        : ZERO_UINT256,
   }
+  depositState.tCDPStatus = tCDPTotalSupply.lt(DUST)
+    ? TCDP_STATUS.INITIATE_REQUIRED
+    : TCDP_STATUS.OK
   depositState.etherStatus = ethAmountBig.gt(depositState.maxToDeposit)
     ? ERC20_STATUS.INSUFFICIENT_BALANCE
     : ERC20_STATUS.OK
+  depositState.receiveDai =
+    depositState.tCDPStatus === TCDP_STATUS.OK
+      ? collateral.gt(0) && ethAmountBig.gt(0)
+        ? ethAmountBig.times(tCDPTotalSupply).div(collateral)
+        : ZERO_UINT256
+      : getUnderlyingPrice.gt(0)
+      ? etherToWei(
+          ethAmountBig
+            .div(IDEAL_COLLATERALIZATION_RATIO)
+            .div(getUnderlyingPrice),
+        )
+      : ZERO_UINT256
+  depositState.receiveTCDP =
+    depositState.tCDPStatus === TCDP_STATUS.OK
+      ? collateral.gt(0) && ethAmountBig.gt(0)
+        ? ethAmountBig.times(debt).div(collateral)
+        : ZERO_UINT256
+      : ethAmountBig
   depositState.ok =
-    ethAmountBig.gt(0) && depositState.etherStatus === ERC20_STATUS.OK
+    (depositState.tCDPStatus === TCDP_STATUS.INITIATE_REQUIRED
+      ? ethAmountBig.gt(DUST)
+      : ethAmountBig.gt(0)) && depositState.etherStatus === ERC20_STATUS.OK
 
   const withdrawState = {
     payDai:
@@ -170,6 +190,14 @@ export default function FunctionPanel({
 
   const tCDP = useContract(tCDPAddress, abiTCDP)
   const dai = useContract(daiAddress, abiERC20)
+
+  const initiate = () => {
+    if (depositState.ok) {
+      tCDP.initiate(bigToHex(depositState.receiveDai), {
+        value: bigToHex(ethAmountBig),
+      })
+    }
+  }
 
   const mint = () => {
     if (depositState.ok) {
@@ -217,13 +245,19 @@ export default function FunctionPanel({
           <Fieldset>
             <Label>You will receive</Label>
             <ResultText>
-              {amountFormatter(depositState.receiveDai, 18, 18)} tCDP +{' '}
-              {amountFormatter(depositState.receiveTCDP, 18, 18)} DAI
+              {amountFormatter(depositState.receiveTCDP, 18, 18)} tCDP +{' '}
+              {amountFormatter(depositState.receiveDai, 18, 18)} DAI
             </ResultText>
           </Fieldset>
-          <Button onClick={mint} active={depositState.ok}>
-            deposit
-          </Button>
+          {depositState.tCDPStatus === TCDP_STATUS.INITIATE_REQUIRED ? (
+            <Button onClick={initiate} active={depositState.ok}>
+              initiate
+            </Button>
+          ) : (
+            <Button onClick={mint} active={depositState.ok}>
+              deposit
+            </Button>
+          )}
         </TabPanelContent>
       </TabPanel>
       <TabPanel value={tab} index={WITHDRAW}>

@@ -156,7 +156,7 @@ const contractAddress = {
   },
   4: {
     compound: {
-      tCDP: '0x59f76d251f117aa6546fdbe029ec13b7f28e8911',
+      tCDP: '0xae5e23e7c1820E10c8aB850B456D36aED6225bff',
       dai: '0x5592ec0cfb4dbc12d3ab100b257153436a1f0fea',
     },
     aave: {
@@ -195,10 +195,15 @@ export default function Home() {
   const {
     [protocol]: { dai: daiAddress, tCDP: tCDPAddress },
   } = contractAddress[chainId] || contractAddress[4]
-  const { collateral, debt, collateralRatio } = useTCDPState(
-    tCDPAddress,
-    blockNumber,
-  )
+  const {
+    collateral,
+    debt,
+    debtRatio,
+    collateralRatio,
+    getUnderlyingPrice,
+    CompoundDaiAPR,
+    CompoundEthAPR,
+  } = useTCDPState(tCDPAddress, blockNumber)
   const {
     totalSupply: tCDPTotalSupply,
     balanceOf: tCDPBalance,
@@ -253,7 +258,22 @@ export default function Home() {
           <Row>
             <Text>CDP Collateralization Ratio</Text>
             <Value>
-              {collateralRatio ? percentageFormatter(collateralRatio, 0) : '-'}
+              {collateralRatio && collateralRatio.isFinite()
+                ? percentageFormatter(collateralRatio, 0)
+                : '-'}
+            </Value>
+          </Row>
+          <Row>
+            <Text>Funding Rate</Text>
+            <Value>
+              {CompoundDaiAPR
+                ? percentageFormatter(
+                    CompoundEthAPR.minus(
+                      CompoundDaiAPR.div(IDEAL_COLLATERALIZATION_RATIO),
+                    ),
+                    18,
+                  )
+                : '-'}
             </Value>
           </Row>
           <Row>
@@ -277,6 +297,8 @@ export default function Home() {
               daiAddress={daiAddress}
               collateral={collateral}
               debt={debt}
+              debtRatio={debtRatio}
+              getUnderlyingPrice={getUnderlyingPrice}
               tCDPTotalSupply={tCDPTotalSupply}
               tCDPBalance={tCDPBalance}
               daiBalance={daiBalance}

@@ -6,7 +6,7 @@ import {
   network as networkConnector,
 } from '../connectors'
 import { getContract, getGasPrice, etherToWei } from '../utils'
-import { READ_ONLY } from '../constants'
+import { READ_ONLY, ZERO_UINT256 } from '../constants'
 import abiTCDP from '../constants/abis/tCDP.json'
 import abiERC20 from '../constants/abis/erc20.json'
 
@@ -187,9 +187,15 @@ export function useContractState(
       return () => {}
     }
     Promise.all(
-      fnsToWatch.map((fn) =>
-        fn.name ? contract[fn.name](...(fn.args || [])) : contract[fn](),
-      ),
+      fnsToWatch.map(async (fn) => {
+        try {
+          return await (fn.name
+            ? contract[fn.name](...(fn.args || []))
+            : contract[fn]())
+        } catch (error) {
+          return ZERO_UINT256
+        }
+      }),
     )
       .then((result) => {
         setContactState(
@@ -226,7 +232,14 @@ export function useTCDPState(address, ...reloadSignals) {
   const contractState = useContractState(
     address,
     abiTCDP,
-    ['collateral', 'debt', 'debtRatio'],
+    [
+      'collateral',
+      'debt',
+      'debtRatio',
+      'getUnderlyingPrice',
+      'CompoundDaiAPR',
+      'CompoundEthAPR',
+    ],
     ...reloadSignals,
   )
   return {

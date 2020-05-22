@@ -14,8 +14,11 @@ const TCDP_STATUS = {
   OK: 'OK',
   COLLATERALIZATION_RATIO_TOO_HIGH: 'COLLATERALIZATION_RATIO_TOO_HIGH',
   COLLATERALIZATION_RATIO_TOO_LOW: 'COLLATERALIZATION_RATIO_TOO_LOW',
+  INITIATE_REQUIRED: 'INITIATE_REQUIRED',
 }
 
+// DUST defines mininal amount to initiate tCDP (10^6)
+const DUST = new BigNumber(1).times(new BigNumber(10).pow(6))
 // UPPER_COLLATERALIZATION_RATIO defines upper bound of collateralization ratio (1 / 0.35 ~= 286%)
 const UPPER_COLLATERALIZATION_RATIO = new BigNumber(1).div(new BigNumber(0.35))
 // IDEAL_COLLATERALIZATION_RATIO defines ideal value of collateralization ratio (1 / 0.40 ~= 250%)
@@ -39,6 +42,7 @@ export {
   READ_ONLY,
   ERC20_STATUS,
   TCDP_STATUS,
+  DUST,
   UPPER_COLLATERALIZATION_RATIO,
   IDEAL_COLLATERALIZATION_RATIO,
   LOWER_COLLATERALIZATION_RATIO,
