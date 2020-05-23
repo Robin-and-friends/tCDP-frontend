@@ -39,7 +39,9 @@ export class InjectedConnector extends AbstractConnector {
     if (__DEV__) {
       console.log("Handling 'networkChanged' event with payload", networkId)
     }
-    this.emitUpdate({ chainId: networkId })
+    if (!Number.isNaN(parseInt(networkId))) {
+      this.emitUpdate({ chainId: networkId })
+    }
   }
 
   handleChainChanged(chainId) {
