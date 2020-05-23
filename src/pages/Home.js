@@ -456,7 +456,12 @@ export default function Home() {
                 <Text>Auto-rebalancing</Text>
               </Item>
               <Item>
-                <Text>Trade on DEX</Text>
+                <Text>
+                  Trade on{' '}
+                  <a href='https://v1.uniswap.exchange/swap?exactField=input&inputCurrency=0xda4C9Ee8373Fd1095379a3Dd457A0c78968aAF03'>
+                    DEX
+                  </a>
+                </Text>
               </Item>
             </List>
           </Block>
