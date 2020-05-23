@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react'
-import { BrowserRouter, Switch, Route } from 'react-router-dom'
+import { BrowserRouter, Switch, Route, Redirect } from 'react-router-dom'
 import { Web3ReactProvider, createWeb3ReactRoot } from '@web3-react/core'
 import { ethers } from 'ethers'
 
@@ -25,6 +25,7 @@ function Router() {
           <Route exact path='/'>
             <Home />
           </Route>
+          <Redirect to='/' />
         </Switch>
       </BrowserRouter>
     </Suspense>

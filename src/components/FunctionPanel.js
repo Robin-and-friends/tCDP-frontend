@@ -36,7 +36,7 @@ const Tab = styled.button`
       ? 'linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,1) 50%)'
       : 'transparent'};
   color: ${({ active, theme }) => (active ? theme.colors.primary : '#B3B3B3')};
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   text-transform: uppercase;
   display: flex;
@@ -47,6 +47,10 @@ const Tab = styled.button`
   &:focus {
     outline: none;
   }
+
+  ${({ theme }) => theme.mediaQuery.md`
+    font-size: 18px
+  `}
 `
 
 function TabPanel(props) {

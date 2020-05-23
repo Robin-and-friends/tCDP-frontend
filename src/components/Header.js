@@ -10,13 +10,22 @@ const HeaderWrapper = styled.header`
   padding: 32px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
+`
+
+const StyledLogo = styled(Logo)`
+  width: 180px;
+
+  ${({ theme }) => theme.mediaQuery.md`
+    width: 330px
+  `}
 `
 
 export default function Header() {
   return (
     <HeaderWrapper>
       <a href='/'>
-        <Logo />
+        <StyledLogo />
       </a>
       <Web3Status />
     </HeaderWrapper>

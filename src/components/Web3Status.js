@@ -8,19 +8,26 @@ import metamaskImage from '../assets/metamask.png'
 import walletconnectImage from '../assets/walletconnect.png'
 
 const StatusButton = styled.button`
-  min-width: 152px;
-  height: 48px;
-  padding: 0 24px;
+  min-width: 120px;
+  height: 40px;
+  padding: 0 12px;
   border: 2px solid ${({ theme }) => theme.colors.white};
   border-radius: 24px;
   background-color: transparent;
   color: ${({ theme }) => theme.colors.white};
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 700;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
+
+  ${({ theme }) => theme.mediaQuery.md`
+    min-width: 152px;
+    height: 40px;
+    padding: 0 24px;
+    font-size: 18px;
+  `}
 `
 
 const Title = styled.h1`

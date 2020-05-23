@@ -38,7 +38,7 @@ const Container = styled.div`
   align-items: flex-start;
 
   > * {
-    flex: 1 0 512px;
+    flex: 1 1 512px;
   }
 
   > * {
@@ -47,7 +47,7 @@ const Container = styled.div`
 `
 
 const Block = styled.section`
-  padding: 32px 40px;
+  padding: 16px 20px;
   border-radius: 8px;
   background-color: ${({ theme }) => theme.colors.white};
   box-shadow: 0 12px 30px -12px rgba(183, 197, 204, 0.6);
@@ -59,11 +59,16 @@ const Block = styled.section`
   &:last-child {
     margin-bottom: 16px;
   }
+
+  ${({ theme }) => theme.mediaQuery.md`
+    padding: 32px 40px;
+  `}
 `
 
 const Row = styled.div`
   width: 100%;
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
 
@@ -109,8 +114,12 @@ const Divider = styled.div`
 `
 
 const Title = styled.div`
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
+
+  ${({ theme }) => theme.mediaQuery.md`
+    font-size: 24px
+  `}
 `
 
 const SubTitle = styled.div`
@@ -118,14 +127,22 @@ const SubTitle = styled.div`
 `
 
 const Text = styled.span`
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
+
+  ${({ theme }) => theme.mediaQuery.md`
+    font-size: 20px
+  `}
 `
 
 const BigText = styled.div`
   margin-top: 14px;
-  font-size: 40px;
+  font-size: 24px;
   font-weight: 700;
+
+  ${({ theme }) => theme.mediaQuery.md`
+    font-size: 40px
+  `}
 `
 
 const Caption = styled.span`
@@ -145,9 +162,13 @@ const Caption = styled.span`
 `
 
 const Value = styled.span`
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   color: #45575b;
+
+  ${({ theme }) => theme.mediaQuery.md`
+    font-size: 20px
+  `}
 `
 
 const UnderlyingProtocol = styled.span`
