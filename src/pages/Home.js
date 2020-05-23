@@ -9,6 +9,7 @@ import {
   useTCDPState,
 } from '../hooks/ethereum'
 import FunctionPanel from '../components/FunctionPanel'
+import BlankLink from '../components/BlankLink'
 import { ReactComponent as RebalanceIcon } from '../assets/rebalance.svg'
 import { ReactComponent as ArrowRightIcon } from '../assets/arrow-right.svg'
 import { ReactComponent as AAVEIcon } from '../assets/aave.svg'
@@ -19,9 +20,11 @@ import {
   IDEAL_COLLATERALIZATION_RATIO,
   LOWER_COLLATERALIZATION_RATIO,
 } from '../constants'
+import { contractAddress, externalLink } from '../config'
 import { defaultChainId } from '../connectors'
 import { amountFormatter, percentageFormatter } from '../utils'
 import abiTCDP from '../constants/abis/tCDP.json'
+import abiFlashMigrator from '../constants/abis/flashMigrator.json'
 
 const Container = styled.div`
   width: 100%;
@@ -51,6 +54,10 @@ const Block = styled.section`
 
   &:not(:first-child) {
     margin-top: 32px;
+  }
+
+  &:last-child {
+    margin-bottom: 16px;
   }
 `
 
@@ -123,7 +130,18 @@ const BigText = styled.div`
 
 const Caption = styled.span`
   font-size: 14px;
-  color: #808080;
+
+  > a {
+    color: #808080;
+    transition: color 0.1s ease-in-out;
+
+    &:visited {
+      color: #808080;
+    }
+    &:hover {
+      color: ${({ theme }) => theme.colors.primary};
+    }
+  }
 `
 
 const Value = styled.span`
@@ -135,37 +153,37 @@ const Value = styled.span`
 const UnderlyingProtocol = styled.span`
   display: flex;
   align-items: center;
+`
 
-  > div {
-    position: relative;
-    width: 2em;
-    height: 2em;
-    margin: 0 0.5em;
+const ActivatableSvg = styled.div`
+  position: relative;
+  width: 2em;
+  height: 2em;
+  margin: 0 0.5em;
 
-    &:last-child {
-      margin-right: 0;
+  &:last-child {
+    margin-right: 0;
+  }
+
+  > svg {
+    position: absolute;
+    width: auto;
+    height: 100%;
+    left: 0;
+    right: 0;
+    margin: auto;
+    transition: opacity 0.5s ease-in-out;
+
+    &[data-gray] {
+      path {
+        fill: #c0c0c0;
+      }
     }
-
-    > svg {
-      position: absolute;
-      width: auto;
-      height: 2em;
-      left: 0;
-      right: 0;
-      margin: auto;
-      transition: opacity 0.5s ease-in-out;
-
-      &[data-gray] {
-        path {
-          fill: #c0c0c0;
-        }
-      }
-      &[data-active='true'] {
-        opacity: 1;
-      }
-      &[data-active='false'] {
-        opacity: 0;
-      }
+    &[data-active='true'] {
+      opacity: 1;
+    }
+    &[data-active='false'] {
+      opacity: 0;
     }
   }
 `
@@ -183,25 +201,72 @@ const StyledArrowRightIcon = styled(ArrowRightIcon)`
   align-self: flex-start;
 `
 
-const contractAddress = {
-  1: {
-    tCDP: '0x5113dBe8C1fA6e5397F0B3B00e890e7fA1139089',
-    dai: '0x6b175474e89094c44da98b954eedeac495271d0f',
-  },
-  4: {
-    tCDP: '0xae5e23e7c1820E10c8aB850B456D36aED6225bff',
-    dai: '0x5592ec0cfb4dbc12d3ab100b257153436a1f0fea',
-  },
-}
+const FundingRateComparisonBox = styled.div`
+  width: 100%;
+  margin-top: 32px;
+  display: flex;
+  align-items: center;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+
+    > svg {
+      width: auto;
+      height: 3em;
+    }
+
+    > span {
+      margin-top: 16px;
+    }
+  }
+`
+
+const ComparisonArrowRightIcon = styled(ArrowRightIcon)`
+  width: 32px;
+  height: 32px;
+  margin: auto;
+`
+
+const ComparisonArrowLeftIcon = styled(ComparisonArrowRightIcon)`
+  transform: rotate(180deg);
+  transform-origin: 50%;
+`
+
+const Button = styled.button`
+  width: 100%;
+  height: 48px;
+  margin-top: 32px;
+  border: 0;
+  border-radius: 8px;
+  background-color: ${({ active, theme }) =>
+    active ? theme.colors.primary : '#B3B3B3'};
+  color: ${({ theme }) => theme.colors.white};
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: ${({ active }) => (active ? '0 6px 20px -6px #73e6e6' : '')};
+  cursor: ${({ active }) => (active ? 'pointer' : 'not-allowed')};
+`
 
 export default function Home() {
   const { chainId = defaultChainId, account } = useWeb3React()
   const blockNumber = useCurrentBlockNumber().toString()
   const balance = useEthBalance(account, blockNumber)
-  const { dai: daiAddress, tCDP: tCDPAddress } =
-    contractAddress[chainId] || contractAddress[4]
   const {
-    isCompound,
+    dai: daiAddress,
+    tCDP: tCDPAddress,
+    flashMigrator: flashMigratorAddress,
+    soloMargin: soloMarginAddress,
+  } = contractAddress[chainId]
+  // Contract states
+  const {
+    isCompoundd: isCompound = true,
     collateral,
     debt,
     debtRatio,
@@ -222,6 +287,10 @@ export default function Home() {
     tCDPAddress,
     blockNumber,
   )
+  // Contract instance
+  const tCDP = useContract(tCDPAddress, abiTCDP)
+  const flashMigrator = useContract(flashMigratorAddress, abiFlashMigrator)
+  // Calculate status
   const tCDPStatus =
     (collateralRatio &&
       (collateralRatio.gt(UPPER_COLLATERALIZATION_RATIO)
@@ -232,7 +301,18 @@ export default function Home() {
         ? TCDP_STATUS.COLLATERALIZATION_RATIO_TOO_LOW
         : TCDP_STATUS.OK)) ||
     TCDP_STATUS.OK
-  const tCDP = useContract(tCDPAddress, abiTCDP)
+  const compoundFundingRate = CompoundDaiAPR
+    ? CompoundEthAPR.minus(CompoundDaiAPR.div(IDEAL_COLLATERALIZATION_RATIO))
+    : undefined
+  const aaveFundingRate = AaveDaiAPR
+    ? AaveEthAPR.minus(AaveDaiAPR.div(IDEAL_COLLATERALIZATION_RATIO))
+    : undefined
+  const readyToMigrate =
+    compoundFundingRate && aaveFundingRate
+      ? isCompound
+        ? aaveFundingRate.gt(compoundFundingRate)
+        : compoundFundingRate.gt(aaveFundingRate)
+      : false
 
   const rebalance = () => {
     switch (tCDPStatus) {
@@ -246,6 +326,12 @@ export default function Home() {
     }
   }
 
+  const migrate = () => {
+    if (readyToMigrate) {
+      flashMigrator.flashMigrate(soloMarginAddress)
+    }
+  }
+
   return (
     <>
       <Container>
@@ -253,14 +339,14 @@ export default function Home() {
           <Row>
             <Text>Underlying Protocol</Text>
             <UnderlyingProtocol>
-              <div>
+              <ActivatableSvg>
                 <CompoundIcon data-gray />
                 <CompoundIcon data-active={isCompound === true} />
-              </div>
-              <div>
+              </ActivatableSvg>
+              <ActivatableSvg>
                 <AAVEIcon data-gray />
                 <AAVEIcon data-active={isCompound === false} />
-              </div>
+              </ActivatableSvg>
             </UnderlyingProtocol>
           </Row>
           <Row>
@@ -285,21 +371,11 @@ export default function Home() {
             <Text>Funding Rate</Text>
             <Value>
               {isCompound === false
-                ? AaveDaiAPR
-                  ? percentageFormatter(
-                      AaveEthAPR.minus(
-                        AaveDaiAPR.div(IDEAL_COLLATERALIZATION_RATIO),
-                      ),
-                      18,
-                    )
+                ? aaveFundingRate
+                  ? percentageFormatter(aaveFundingRate, 18)
                   : '-'
-                : CompoundDaiAPR
-                ? percentageFormatter(
-                    CompoundEthAPR.minus(
-                      CompoundDaiAPR.div(IDEAL_COLLATERALIZATION_RATIO),
-                    ),
-                    18,
-                  )
+                : compoundFundingRate
+                ? percentageFormatter(compoundFundingRate, 18)
                 : '-'}
             </Value>
           </Row>
@@ -366,7 +442,11 @@ export default function Home() {
           <Block>
             <Row>
               <Title>Next Rebalance</Title>
-              <Caption>Learn how rebalancing works</Caption>
+              <Caption>
+                <BlankLink href={externalLink.learnRebalancing}>
+                  Learn how rebalancing works
+                </BlankLink>
+              </Caption>
             </Row>
             <Divider />
             <Row>
@@ -403,6 +483,53 @@ export default function Home() {
                 ) : null}
               </div>
             </Row>
+          </Block>
+          <Block>
+            <Row>
+              <Title>Flash Migrate</Title>
+              <Caption>
+                <BlankLink href={externalLink.learnFlashMigrating}>
+                  Learn how flash migrating works
+                </BlankLink>
+              </Caption>
+            </Row>
+            <Divider />
+            <FundingRateComparisonBox>
+              <div>
+                <ActivatableSvg style={{ height: '3em' }}>
+                  <CompoundIcon data-gray />
+                  <CompoundIcon data-active={isCompound === true} />
+                </ActivatableSvg>
+                <Bold>
+                  {compoundFundingRate
+                    ? percentageFormatter(compoundFundingRate, 18)
+                    : '-'}{' '}
+                </Bold>
+              </div>
+              {compoundFundingRate && aaveFundingRate ? (
+                compoundFundingRate.gt(aaveFundingRate) ? (
+                  <ComparisonArrowRightIcon />
+                ) : (
+                  <ComparisonArrowLeftIcon />
+                )
+              ) : (
+                <svg style={{ width: '32px', height: '0' }} />
+              )}
+              <div>
+                <ActivatableSvg style={{ height: '3em' }}>
+                  <AAVEIcon data-gray />
+                  <AAVEIcon data-active={isCompound === false} />
+                </ActivatableSvg>
+                <Bold>
+                  {aaveFundingRate
+                    ? percentageFormatter(aaveFundingRate, 18)
+                    : '-'}{' '}
+                </Bold>
+              </div>
+            </FundingRateComparisonBox>
+            <Button onClick={() => migrate()} active={readyToMigrate}>
+              FLASH MIGRATE
+            </Button>
           </Block>
         </div>
       </Container>

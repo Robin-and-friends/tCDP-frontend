@@ -1,12 +1,13 @@
 import { NetworkConnector } from '@web3-react/network-connector'
 import { InjectedConnector } from './Injected'
 import { WalletConnectConnector } from './Walletconnect'
+import { infuraProjectId } from '../config'
 
 const POLLING_INTERVAL = 8000
 
 const RPC_URLS = {
   1: 'https://mainnet.easydai.app/nZHy9xQ5QJslmP2pCvGSH7JDLxHylM',
-  4: `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_TOKEN || ''}`,
+  4: `https://rinkeby.infura.io/v3/${infuraProjectId}`,
 }
 
 const supportedChainIds = [1]
