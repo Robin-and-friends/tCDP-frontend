@@ -116,7 +116,6 @@ export default function FunctionPanel({
   balance = ZERO_UINT256,
   collateral = ZERO_UINT256,
   debt = ZERO_UINT256,
-  debtRatio = ZERO_UINT256,
   getUnderlyingPrice = ZERO_UINT256,
   tCDPBalance = ZERO_UINT256,
   tCDPTotalSupply = ZERO_UINT256,

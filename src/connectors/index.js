@@ -9,14 +9,13 @@ const RPC_URLS = {
   4: `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_TOKEN || ''}`,
 }
 
-// TODO: Change defaultChainId to 1
-const supportedChainIds = [4]
-let defaultChainId = 4
+const supportedChainIds = [1]
+export let defaultChainId = 1
 
-// if (process.env.NODE_ENV === 'development') {
-//   supportedChainIds.concat([4])
-//   defaultChainId = 4
-// }
+if (process.env.NODE_ENV === 'development') {
+  supportedChainIds.push(4)
+  defaultChainId = 4
+}
 
 export const injected = new InjectedConnector({ supportedChainIds })
 

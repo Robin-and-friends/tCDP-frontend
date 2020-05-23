@@ -193,7 +193,7 @@ export function useContractState(
             ? contract[fn.name](...(fn.args || []))
             : contract[fn]())
         } catch (error) {
-          return ZERO_UINT256
+          return undefined
         }
       }),
     )
@@ -202,9 +202,10 @@ export function useContractState(
           fnsToWatch.reduce(
             (newContactState, fn, i) => ({
               ...newContactState,
-              [fn.name ? fn.name : fn]: result[i]._isBigNumber
-                ? new BigNumber(result[i].toString())
-                : result[i],
+              [fn.name ? fn.name : fn]:
+                result[i] && result[i]._isBigNumber
+                  ? new BigNumber(result[i].toString())
+                  : result[i],
             }),
             {},
           ),
@@ -233,12 +234,15 @@ export function useTCDPState(address, ...reloadSignals) {
     address,
     abiTCDP,
     [
+      'isCompound',
       'collateral',
       'debt',
       'debtRatio',
       'getUnderlyingPrice',
       'CompoundDaiAPR',
       'CompoundEthAPR',
+      'AaveDaiAPR',
+      'AaveEthAPR',
     ],
     ...reloadSignals,
   )

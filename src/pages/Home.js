@@ -11,12 +11,15 @@ import {
 import FunctionPanel from '../components/FunctionPanel'
 import { ReactComponent as RebalanceIcon } from '../assets/rebalance.svg'
 import { ReactComponent as ArrowRightIcon } from '../assets/arrow-right.svg'
+import { ReactComponent as AAVEIcon } from '../assets/aave.svg'
+import { ReactComponent as CompoundIcon } from '../assets/compound.svg'
 import {
   TCDP_STATUS,
   UPPER_COLLATERALIZATION_RATIO,
   IDEAL_COLLATERALIZATION_RATIO,
   LOWER_COLLATERALIZATION_RATIO,
 } from '../constants'
+import { defaultChainId } from '../connectors'
 import { amountFormatter, percentageFormatter } from '../utils'
 import abiTCDP from '../constants/abis/tCDP.json'
 
@@ -129,6 +132,44 @@ const Value = styled.span`
   color: #45575b;
 `
 
+const UnderlyingProtocol = styled.span`
+  display: flex;
+  align-items: center;
+
+  > div {
+    position: relative;
+    width: 2em;
+    height: 2em;
+    margin: 0 0.5em;
+
+    &:last-child {
+      margin-right: 0;
+    }
+
+    > svg {
+      position: absolute;
+      width: auto;
+      height: 2em;
+      left: 0;
+      right: 0;
+      margin: auto;
+      transition: opacity 0.5s ease-in-out;
+
+      &[data-gray] {
+        path {
+          fill: #c0c0c0;
+        }
+      }
+      &[data-active='true'] {
+        opacity: 1;
+      }
+      &[data-active='false'] {
+        opacity: 0;
+      }
+    }
+  }
+`
+
 const Bold = styled.span`
   font-weight: 700;
 `
@@ -144,7 +185,7 @@ const StyledArrowRightIcon = styled(ArrowRightIcon)`
 
 const contractAddress = {
   1: {
-    tCDP: '',
+    tCDP: '0x5113dBe8C1fA6e5397F0B3B00e890e7fA1139089',
     dai: '0x6b175474e89094c44da98b954eedeac495271d0f',
   },
   4: {
@@ -154,12 +195,13 @@ const contractAddress = {
 }
 
 export default function Home() {
-  const { chainId, account } = useWeb3React()
+  const { chainId = defaultChainId, account } = useWeb3React()
   const blockNumber = useCurrentBlockNumber().toString()
   const balance = useEthBalance(account, blockNumber)
   const { dai: daiAddress, tCDP: tCDPAddress } =
     contractAddress[chainId] || contractAddress[4]
   const {
+    isCompound,
     collateral,
     debt,
     debtRatio,
@@ -167,6 +209,8 @@ export default function Home() {
     getUnderlyingPrice,
     CompoundDaiAPR,
     CompoundEthAPR,
+    AaveDaiAPR,
+    AaveEthAPR,
   } = useTCDPState(tCDPAddress, blockNumber)
   const {
     totalSupply: tCDPTotalSupply,
@@ -207,6 +251,19 @@ export default function Home() {
       <Container>
         <Block>
           <Row>
+            <Text>Underlying Protocol</Text>
+            <UnderlyingProtocol>
+              <div>
+                <CompoundIcon data-gray />
+                <CompoundIcon data-active={isCompound === true} />
+              </div>
+              <div>
+                <AAVEIcon data-gray />
+                <AAVEIcon data-active={isCompound === false} />
+              </div>
+            </UnderlyingProtocol>
+          </Row>
+          <Row>
             <Text>ETH Locked</Text>
             <Value>
               {collateral ? `${amountFormatter(collateral, 18)} ETH` : '-'}
@@ -227,7 +284,16 @@ export default function Home() {
           <Row>
             <Text>Funding Rate</Text>
             <Value>
-              {CompoundDaiAPR
+              {isCompound === false
+                ? AaveDaiAPR
+                  ? percentageFormatter(
+                      AaveEthAPR.minus(
+                        AaveDaiAPR.div(IDEAL_COLLATERALIZATION_RATIO),
+                      ),
+                      18,
+                    )
+                  : '-'
+                : CompoundDaiAPR
                 ? percentageFormatter(
                     CompoundEthAPR.minus(
                       CompoundDaiAPR.div(IDEAL_COLLATERALIZATION_RATIO),
@@ -272,7 +338,7 @@ export default function Home() {
             <SubTitle>Problem</SubTitle>
             <List>
               <Item>
-                <Text>CDP is illquid</Text>
+                <Text>CDP is illiquid</Text>
               </Item>
               <Item>
                 <Text>Maintaining collateral ratio is annoying</Text>
