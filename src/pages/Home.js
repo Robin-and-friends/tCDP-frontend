@@ -11,6 +11,8 @@ import {
 import FunctionPanel from '../components/FunctionPanel'
 import { ReactComponent as RebalanceIcon } from '../assets/rebalance.svg'
 import { ReactComponent as ArrowRightIcon } from '../assets/arrow-right.svg'
+import { ReactComponent as AAVEIcon } from '../assets/aave.svg'
+import { ReactComponent as CompoundIcon } from '../assets/compound.svg'
 import {
   TCDP_STATUS,
   UPPER_COLLATERALIZATION_RATIO,
@@ -129,6 +131,44 @@ const Value = styled.span`
   color: #45575b;
 `
 
+const UnderlyingProtocol = styled.span`
+  display: flex;
+  align-items: center;
+
+  > div {
+    position: relative;
+    width: 2em;
+    height: 2em;
+    margin: 0 0.5em;
+
+    &:last-child {
+      margin-right: 0;
+    }
+
+    > svg {
+      position: absolute;
+      width: auto;
+      height: 2em;
+      left: 0;
+      right: 0;
+      margin: auto;
+      transition: opacity 0.5s ease-in-out;
+
+      &[data-gray] {
+        path {
+          fill: #c0c0c0;
+        }
+      }
+      &[data-active='true'] {
+        opacity: 1;
+      }
+      &[data-active='false'] {
+        opacity: 0;
+      }
+    }
+  }
+`
+
 const Bold = styled.span`
   font-weight: 700;
 `
@@ -160,6 +200,7 @@ export default function Home() {
   const { dai: daiAddress, tCDP: tCDPAddress } =
     contractAddress[chainId] || contractAddress[4]
   const {
+    isCompound,
     collateral,
     debt,
     debtRatio,
@@ -167,6 +208,8 @@ export default function Home() {
     getUnderlyingPrice,
     CompoundDaiAPR,
     CompoundEthAPR,
+    AaveDaiAPR,
+    AaveEthAPR,
   } = useTCDPState(tCDPAddress, blockNumber)
   const {
     totalSupply: tCDPTotalSupply,
@@ -207,6 +250,19 @@ export default function Home() {
       <Container>
         <Block>
           <Row>
+            <Text>Underlying Protocol</Text>
+            <UnderlyingProtocol>
+              <div>
+                <CompoundIcon data-gray />
+                <CompoundIcon data-active={isCompound === true} />
+              </div>
+              <div>
+                <AAVEIcon data-gray />
+                <AAVEIcon data-active={isCompound === false} />
+              </div>
+            </UnderlyingProtocol>
+          </Row>
+          <Row>
             <Text>ETH Locked</Text>
             <Value>
               {collateral ? `${amountFormatter(collateral, 18)} ETH` : '-'}
@@ -227,7 +283,16 @@ export default function Home() {
           <Row>
             <Text>Funding Rate</Text>
             <Value>
-              {CompoundDaiAPR
+              {isCompound === false
+                ? AaveDaiAPR
+                  ? percentageFormatter(
+                      AaveEthAPR.minus(
+                        AaveDaiAPR.div(IDEAL_COLLATERALIZATION_RATIO),
+                      ),
+                      18,
+                    )
+                  : '-'
+                : CompoundDaiAPR
                 ? percentageFormatter(
                     CompoundEthAPR.minus(
                       CompoundDaiAPR.div(IDEAL_COLLATERALIZATION_RATIO),
@@ -272,7 +337,7 @@ export default function Home() {
             <SubTitle>Problem</SubTitle>
             <List>
               <Item>
-                <Text>CDP is illquid</Text>
+                <Text>CDP is illiquid</Text>
               </Item>
               <Item>
                 <Text>Maintaining collateral ratio is annoying</Text>
