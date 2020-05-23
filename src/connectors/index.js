@@ -10,7 +10,7 @@ const RPC_URLS = {
 }
 
 const supportedChainIds = [1]
-let defaultChainId = 1
+export let defaultChainId = 1
 
 if (process.env.NODE_ENV === 'development') {
   supportedChainIds.push(4)

@@ -19,6 +19,7 @@ import {
   IDEAL_COLLATERALIZATION_RATIO,
   LOWER_COLLATERALIZATION_RATIO,
 } from '../constants'
+import { defaultChainId } from '../connectors'
 import { amountFormatter, percentageFormatter } from '../utils'
 import abiTCDP from '../constants/abis/tCDP.json'
 
@@ -194,7 +195,7 @@ const contractAddress = {
 }
 
 export default function Home() {
-  const { chainId, account } = useWeb3React()
+  const { chainId = defaultChainId, account } = useWeb3React()
   const blockNumber = useCurrentBlockNumber().toString()
   const balance = useEthBalance(account, blockNumber)
   const { dai: daiAddress, tCDP: tCDPAddress } =
