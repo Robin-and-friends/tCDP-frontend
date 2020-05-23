@@ -144,7 +144,7 @@ const StyledArrowRightIcon = styled(ArrowRightIcon)`
 
 const contractAddress = {
   1: {
-    tCDP: '',
+    tCDP: '0x5113dBe8C1fA6e5397F0B3B00e890e7fA1139089',
     dai: '0x6b175474e89094c44da98b954eedeac495271d0f',
   },
   4: {
