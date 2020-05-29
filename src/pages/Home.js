@@ -275,6 +275,18 @@ const Button = styled.button`
   cursor: ${({ active }) => (active ? 'pointer' : 'not-allowed')};
 `
 
+const WarningMessage = styled.div`
+  margin: 0 16px;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.5);
+  color: ${({ theme }) => theme.colors.warningColor};
+  font-size: 18px;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 1px;
+`
+
 export default function Home() {
   const { chainId = defaultChainId, account } = useWeb3React()
   const blockNumber = useCurrentBlockNumber().toString()
@@ -355,6 +367,12 @@ export default function Home() {
 
   return (
     <>
+      <Container>
+        <WarningMessage>
+          Alpha Version! It should be treated as highly unstable. Use at your
+          own risk.
+        </WarningMessage>
+      </Container>
       <Container>
         <Block>
           <Row>

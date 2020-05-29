@@ -33,7 +33,7 @@ const theme = {
     white,
     backgroundColor: '#F5F7FA',
     textColor: '#4D4D4D',
-    waringColor: '#eb4d4b',
+    warningColor: '#eb4d4b',
     primary: '#43BFBF',
   },
 }

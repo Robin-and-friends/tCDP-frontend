@@ -89,7 +89,7 @@ const WaringText = styled.div`
   justify-content: center;
   margin-bottom: -40px;
   height: 40px;
-  color: ${({ theme }) => theme.colors.waringColor};
+  color: ${({ theme }) => theme.colors.warningColor};
 `
 
 const Button = styled.button`
